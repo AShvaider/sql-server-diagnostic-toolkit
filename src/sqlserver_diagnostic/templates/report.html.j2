@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ server_info.database_name }} — diagnostic report</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --ink: #1a1a1a;
+    --ink-2: #4a4a4a;
+    --ink-3: #808080;
+    --rule: #e8e6e0;
+    --accent: #1e3a5f;
+    --crit: #b42318;
+    --crit-bg: #fef3f2;
+    --warn: #b54708;
+    --warn-bg: #fffaf0;
+    --info: #175cd3;
+    --info-bg: #eff6ff;
+    --code-bg: #f4f3ee;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.55 ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1100px; margin: 0 auto; padding: 32px 28px 64px; }
+
+  header.top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--rule); margin-bottom: 28px;
+  }
+  .brand { font-weight: 600; letter-spacing: .01em; }
+  .brand small { display: block; color: var(--ink-3); font-weight: 400; font-size: 12px; margin-top: 2px; }
+  .meta { text-align: right; font-size: 13px; color: var(--ink-2); line-height: 1.6; }
+  .meta .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px;
+    background: var(--accent); color: #fff; letter-spacing: .04em; text-transform: uppercase;
+  }
+
+  .verdict {
+    background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--accent);
+    padding: 20px 24px; margin-bottom: 28px;
+  }
+  .verdict h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+  .verdict p { margin: 0; color: var(--ink-2); }
+
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 36px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--rule); padding: 18px 20px;
+    border-top: 3px solid var(--ink-3);
+  }
+  .tile .n { font-size: 30px; font-weight: 600; letter-spacing: -.02em; line-height: 1; }
+  .tile .lbl { font-size: 12px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; margin-top: 8px; }
+  .tile.crit { border-top-color: var(--crit); }
+  .tile.warn { border-top-color: var(--warn); }
+  .tile.info { border-top-color: var(--info); }
+
+  h2.section { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); margin: 36px 0 14px; font-weight: 600; }
+  h2.section .count { color: var(--ink); font-weight: 600; margin-left: 6px; }
+
+  .finding {
+    background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--ink-3);
+    padding: 16px 20px; margin-bottom: 10px;
+  }
+  .finding.critical { border-left-color: var(--crit); }
+  .finding.warning  { border-left-color: var(--warn); }
+  .finding.info     { border-left-color: var(--info); }
+
+  .finding .head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 4px; }
+  .finding .title { font-weight: 600; font-size: 15.5px; }
+  .finding .slug { font: 11.5px/1 ui-monospace, "SF Mono", Menlo, monospace; color: var(--ink-3); }
+  .finding p.desc { margin: 6px 0 10px; color: var(--ink-2); }
+
+  .rec {
+    background: var(--code-bg); border-left: 2px solid var(--ink-3);
+    padding: 10px 14px; margin: 10px 0 0;
+    font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+    color: var(--ink); white-space: pre-wrap; overflow-x: auto;
+  }
+  .rec.inline { background: transparent; border: none; padding: 0; font: inherit; white-space: normal; }
+
+  details.details { margin-top: 10px; }
+  details.details summary {
+    cursor: pointer; font-size: 12.5px; color: var(--ink-3); user-select: none;
+    padding: 2px 0;
+  }
+  details.details summary:hover { color: var(--ink); }
+  details.details table { margin-top: 8px; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table th, table td { text-align: left; padding: 5px 10px 5px 0; vertical-align: top; color: var(--ink-2); }
+  table th { color: var(--ink-3); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+
+  .info-table { background: var(--surface); border: 1px solid var(--rule); }
+  .info-table table { width: 100%; }
+  .info-table th, .info-table td { padding: 8px 16px; border-bottom: 1px solid var(--rule); }
+  .info-table tr:last-child td { border-bottom: none; }
+  .info-table .slug { font: 11.5px/1 ui-monospace, "SF Mono", Menlo, monospace; color: var(--ink-3); }
+  .info-table .title { color: var(--ink); }
+
+  .cat-summary { background: var(--surface); border: 1px solid var(--rule); padding: 0; }
+  .cat-summary table { width: 100%; }
+  .cat-summary th, .cat-summary td { padding: 10px 18px; border-bottom: 1px solid var(--rule); font-size: 13px; color: var(--ink); }
+  .cat-summary tr:last-child td { border-bottom: none; }
+  .cat-summary .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .cat-summary .cat-name { font-weight: 500; text-transform: capitalize; }
+
+  footer.bottom {
+    margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--rule);
+    font-size: 12px; color: var(--ink-3); line-height: 1.6;
+  }
+  footer.bottom code { background: var(--code-bg); padding: 1px 6px; font-size: 11.5px; }
+
+  @media (max-width: 720px) {
+    .tiles { grid-template-columns: 1fr; }
+    header.top { flex-direction: column; }
+    .meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="top">
+  <div class="brand">
+    SQL Server Diagnostic
+    <small>sql-server-diagnostic-toolkit v{{ tool_version }}</small>
+  </div>
+  <div class="meta">
+    <span class="tag">Read-only scan</span><br>
+    <b>{{ server_info.database_name }}</b> on <code>{{ server_info.server_name }}</code><br>
+    {{ server_info.sql_version }}<br>
+    <span style="color: var(--ink-3);">Scanned {{ generated_at }} · {{ server_info.scan_duration_s }}s</span>
+  </div>
+</header>
+
+<section class="verdict">
+  <h2>{{ verdict.headline }}</h2>
+  <p>{{ verdict.summary }}</p>
+</section>
+
+<section class="tiles">
+  <div class="tile crit">
+    <div class="n">{{ totals.by_severity.critical or 0 }}</div>
+    <div class="lbl">Critical</div>
+  </div>
+  <div class="tile warn">
+    <div class="n">{{ totals.by_severity.warning or 0 }}</div>
+    <div class="lbl">Warnings</div>
+  </div>
+  <div class="tile info">
+    <div class="n">{{ totals.by_severity.info or 0 }}</div>
+    <div class="lbl">Informational</div>
+  </div>
+</section>
+
+{% if by_severity.critical %}
+<h2 class="section">Critical <span class="count">({{ by_severity.critical|length }})</span></h2>
+{% for f in by_severity.critical %}
+<div class="finding critical">
+  <div class="head">
+    <div class="title">{{ f.title }}</div>
+    <div class="slug">{{ f.id }}</div>
+  </div>
+  <p class="desc">{{ f.description }}</p>
+  {% if f.recommendation %}<pre class="rec">{{ f.recommendation }}</pre>{% endif %}
+  {% if f.details %}
+  <details class="details"><summary>Details</summary>
+    <table>
+      {% for k, v in f.details.items() %}
+      <tr><th>{{ k }}</th><td>{{ v }}</td></tr>
+      {% endfor %}
+    </table>
+  </details>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if by_severity.warning %}
+<h2 class="section">Warnings <span class="count">({{ by_severity.warning|length }})</span></h2>
+{% for f in by_severity.warning %}
+<div class="finding warning">
+  <div class="head">
+    <div class="title">{{ f.title }}</div>
+    <div class="slug">{{ f.id }}</div>
+  </div>
+  <p class="desc">{{ f.description }}</p>
+  {% if f.recommendation %}<pre class="rec">{{ f.recommendation }}</pre>{% endif %}
+  {% if f.details %}
+  <details class="details"><summary>Details</summary>
+    <table>
+      {% for k, v in f.details.items() %}
+      <tr><th>{{ k }}</th><td>{{ v }}</td></tr>
+      {% endfor %}
+    </table>
+  </details>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if by_severity.info %}
+<h2 class="section">Informational <span class="count">({{ by_severity.info|length }})</span></h2>
+<div class="info-table">
+  <table>
+    <tr><th style="width: 28%;">Finding</th><th style="width: 52%;">Description</th><th style="width: 20%;">ID</th></tr>
+    {% for f in by_severity.info %}
+    <tr>
+      <td class="title">{{ f.title }}</td>
+      <td>{{ f.description }}</td>
+      <td class="slug">{{ f.id }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<h2 class="section">By category</h2>
+<div class="cat-summary">
+  <table>
+    <tr><th>Category</th><th class="num">Critical</th><th class="num">Warning</th><th class="num">Info</th><th class="num">Total</th></tr>
+    {% for cat, counts in category_breakdown.items() %}
+    <tr>
+      <td class="cat-name">{{ cat }}</td>
+      <td class="num">{{ counts.critical }}</td>
+      <td class="num">{{ counts.warning }}</td>
+      <td class="num">{{ counts.info }}</td>
+      <td class="num"><b>{{ counts.total }}</b></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+{% if errors %}
+<h2 class="section">Probes that failed</h2>
+<div class="info-table">
+  <table>
+    {% for e in errors %}
+    <tr><td class="slug" style="width: 30%;">{{ e.probe }}</td><td>{{ e.error }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<footer class="bottom">
+  Read-only scan. Only <code>SELECT</code> against DMVs and system catalog views. Re-run:
+  <code>python -m sqlserver_diagnostic --server HOST --database DB --output ./report</code>
+</footer>
+
+</div>
+</body>
+</html>

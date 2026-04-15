@@ -1,0 +1,52 @@
+# Disposable SQL Server 2022 with a seeded e-commerce schema.
+# Brings up two services: the engine, and a one-shot seeder that loads the
+# schema, inserts data, and runs enough workload to make the diagnostic
+# probes produce realistic findings.
+#
+# Port 14333 instead of 1433 to avoid clashing with a local install.
+# Password matches what the README uses.
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqldiag-mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Diag_pwd_42!"
+      MSSQL_PID: "Developer"
+      # Default tempdb is 1 file; we leave it that way so the tempdb probe has
+      # something to complain about. Same with not setting MSSQL_MEMORY_LIMIT_MB.
+    ports:
+      - "14333:1433"
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Diag_pwd_42!' -C -Q 'SELECT 1' || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Diag_pwd_42!' -Q 'SELECT 1'"
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    volumes:
+      - mssql-data:/var/opt/mssql
+
+  seed:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqldiag-seed
+    depends_on:
+      mssql:
+        condition: service_healthy
+    volumes:
+      - ./seed.sql:/seed/seed.sql:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -e
+        TOOLS=/opt/mssql-tools18/bin/sqlcmd
+        if [ ! -x "$$TOOLS" ]; then TOOLS=/opt/mssql-tools/bin/sqlcmd; fi
+        echo "seeding..."
+        $$TOOLS -S mssql -U sa -P 'Diag_pwd_42!' -C -i /seed/seed.sql
+        echo "seed done."
+
+volumes:
+  mssql-data:

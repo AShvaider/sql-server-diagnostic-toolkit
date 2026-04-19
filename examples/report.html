@@ -133,51 +133,49 @@
   </div>
   <div class="meta">
     <span class="tag">Read-only scan</span><br>
-    <b>shopdb</b> on <code>prod-sql-01.internal,1433</code><br>
-    SQL Server 2022 (RTM-CU10) Standard Edition<br>
-    <span style="color: var(--ink-3);">Scanned 2026-04-18 22:19 UTC · 3.8s</span>
+    <b>shopdb</b> on <code>9a6635a9bb2b</code><br>
+    Microsoft SQL Server 2022 (RTM-CU24-GDR) (KB5083252) - 16.0.4250.1 (X64)<br>
+    <span style="color: var(--ink-3);">Scanned 2026-04-18 22:40 UTC · s</span>
   </div>
 </header>
 
 <section class="verdict">
   <h2>Action required</h2>
-  <p>6 critical issues need attention.</p>
+  <p>3 critical issues need attention.</p>
 </section>
 
 <section class="tiles">
   <div class="tile crit">
-    <div class="n">6</div>
+    <div class="n">3</div>
     <div class="lbl">Critical</div>
   </div>
   <div class="tile warn">
-    <div class="n">22</div>
+    <div class="n">14</div>
     <div class="lbl">Warnings</div>
   </div>
   <div class="tile info">
-    <div class="n">29</div>
+    <div class="n">25</div>
     <div class="lbl">Informational</div>
   </div>
 </section>
 
 
-<h2 class="section">Critical <span class="count">(6)</span></h2>
+<h2 class="section">Critical <span class="count">(3)</span></h2>
 
 <div class="finding critical">
   <div class="head">
-    <div class="title">PLE critically low: 278s</div>
-    <div class="slug">cap.mem.page_life_expectancy</div>
+    <div class="title">No recent full backup: shopdb</div>
+    <div class="slug">hlt.backup.full.shopdb</div>
   </div>
-  <p class="desc">Buffer pool is churning. Add memory or reduce IO.</p>
-  
+  <p class="desc">Last FULL: never hours ago.</p>
+  <pre class="rec">BACKUP DATABASE [shopdb] TO DISK='...' WITH CHECKSUM, COMPRESSION;</pre>
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>metric</th><td>page_life_expectancy</td></tr>
+      <tr><th>recovery_model</th><td>FULL</td></tr>
       
-      <tr><th>value</th><td>278</td></tr>
-      
-      <tr><th>unit</th><td>seconds</td></tr>
+      <tr><th>hours_since_full</th><td>None</td></tr>
       
     </table>
   </details>
@@ -189,13 +187,13 @@
     <div class="title">Log backup gap > 24h: shopdb</div>
     <div class="slug">hlt.backup.log.shopdb</div>
   </div>
-  <p class="desc">Recovery model is FULL, last log backup 34.7 hours ago. Log will grow unbounded.</p>
+  <p class="desc">Recovery model is FULL, last log backup never hours ago. Log will grow unbounded.</p>
   <pre class="rec">BACKUP LOG [shopdb] TO DISK='...' WITH COMPRESSION;</pre>
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>hours_since_log</th><td>34.7</td></tr>
+      <tr><th>hours_since_log</th><td>None</td></tr>
       
     </table>
   </details>
@@ -204,98 +202,40 @@
 
 <div class="finding critical">
   <div class="head">
-    <div class="title">VLF count 14,820 on shopdb</div>
-    <div class="slug">hlt.vlf.shopdb</div>
+    <div class="title">8,752 ms avg · 1 runs</div>
+    <div class="slug">perf.query.b'g\x02\x00\xca\x04~'</div>
   </div>
-  <p class="desc">Startup, log backups, and crash recovery will be slow.</p>
-  <pre class="rec">USE shopdb; DBCC SHRINKFILE (shopdb_log, 100); ALTER DATABASE shopdb MODIFY FILE (NAME = shopdb_log, SIZE = 8192MB, FILEGROWTH = 8192MB);</pre>
+  <p class="desc">WITH n AS (
+    SELECT TOP (200000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects...</p>
+  <pre class="rec">WITH n AS (
+    SELECT TOP (200000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects b CROSS JOIN sys.all_objects c
+)
+INSERT audit_log (occurred_at, actor, action, payload)
+SELECT
+    DATEADD(SECOND, -ABS(CHECKSUM(NEWID())) % (60 * 60 * 24 * 30), SYSUTCDATETIME()),
+    CONCAT('user', 1 + ABS(CHECKSUM(NEWID())) % 200),
+    CASE ABS(CHECKSUM(NEWID())) % 4
+         WHEN 0 THEN 'login' WHEN 1 THEN 'view'
+         WHEN 2 THEN 'update' ELSE 'logout' END,
+    REPLICATE('x', 200)
+FROM n</pre>
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>vlf_count</th><td>14820</td></tr>
+      <tr><th>query_hash</th><td>b'K\x93g\x02\x00\xca\x04~'</td></tr>
       
-      <tr><th>log_size_mb</th><td>28000</td></tr>
+      <tr><th>execution_count</th><td>1</td></tr>
       
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding critical">
-  <div class="head">
-    <div class="title">Heavily fragmented: IX_audit_log_created_at on dbo.audit_log</div>
-    <div class="slug">perf.frag.IX_audit_log_created_at</div>
-  </div>
-  <p class="desc">87.3% over 185,400 pages. Rebuild.</p>
-  <pre class="rec">ALTER INDEX [IX_audit_log_created_at] ON [dbo].[audit_log] REBUILD;</pre>
-  
-  <details class="details"><summary>Details</summary>
-    <table>
+      <tr><th>avg_worker_time_ms</th><td>8752</td></tr>
       
-      <tr><th>fragmentation_pct</th><td>87.3</td></tr>
+      <tr><th>total_worker_time_ms</th><td>8752</td></tr>
       
-      <tr><th>page_count</th><td>185400</td></tr>
+      <tr><th>avg_logical_reads</th><td>656478</td></tr>
       
-      <tr><th>index_type</th><td>NONCLUSTERED INDEX</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding critical">
-  <div class="head">
-    <div class="title">Missing index on dbo.customers (email)</div>
-    <div class="slug">perf.missing_idx.customers.email</div>
-  </div>
-  <p class="desc">Improvement measure 2,540,000, avg impact 92%, 0 seeks.</p>
-  <pre class="rec">CREATE NONCLUSTERED INDEX IX_customers_email ON dbo.customers (email) INCLUDE (first_name, last_name, created_at);</pre>
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>improvement_measure</th><td>2540000</td></tr>
-      
-      <tr><th>avg_user_impact_pct</th><td>92.4</td></tr>
-      
-      <tr><th>user_seeks</th><td>0</td></tr>
-      
-      <tr><th>user_scans</th><td>18400</td></tr>
-      
-      <tr><th>equality_columns</th><td>email</td></tr>
-      
-      <tr><th>inequality_columns</th><td></td></tr>
-      
-      <tr><th>included_columns</th><td>first_name, last_name, created_at</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding critical">
-  <div class="head">
-    <div class="title">7,200 ms avg · 18,400 runs</div>
-    <div class="slug">perf.query.3F9A8B1C</div>
-  </div>
-  <p class="desc">SELECT o.id, o.customer_id, SUM(oi.quantity * oi.unit_price) AS total FROM dbo.orders o JOIN dbo.order_items oi ON oi.order_id = o.id WHE...</p>
-  <pre class="rec">SELECT o.id, o.customer_id, SUM(oi.quantity * oi.unit_price) AS total FROM dbo.orders o JOIN dbo.order_items oi ON oi.order_id = o.id WHERE o.created_at > DATEADD(day, -30, GETDATE()) GROUP BY o.id, o.customer_id</pre>
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>query_hash</th><td>0x3F9A8B1C2D4E5F60</td></tr>
-      
-      <tr><th>execution_count</th><td>18400</td></tr>
-      
-      <tr><th>avg_worker_time_ms</th><td>7200</td></tr>
-      
-      <tr><th>total_worker_time_ms</th><td>132480000</td></tr>
-      
-      <tr><th>avg_logical_reads</th><td>1240000</td></tr>
-      
-      <tr><th>last_execution_time</th><td>2026-04-17 08:12:33</td></tr>
+      <tr><th>last_execution_time</th><td>2026-04-18 22:33:42.270000</td></tr>
       
     </table>
   </details>
@@ -305,278 +245,24 @@
 
 
 
-<h2 class="section">Warnings <span class="count">(22)</span></h2>
+<h2 class="section">Warnings <span class="count">(14)</span></h2>
 
 <div class="finding warning">
   <div class="head">
-    <div class="title">Session 104 blocking 227 (12,800 ms)</div>
-    <div class="slug">bot.block.104_227</div>
+    <div class="title">PLE low: 440s</div>
+    <div class="slug">cap.mem.page_life_expectancy</div>
   </div>
-  <p class="desc">LCK_M_S. Blocker: etl_pipeline. Blocked: app_service.</p>
+  <p class="desc">Watch for sustained drops under peak load.</p>
   
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>resource</th><td>objectlock OBJECT: 5:1093578934</td></tr>
+      <tr><th>metric</th><td>page_life_expectancy</td></tr>
       
-      <tr><th>blocker_query</th><td>BEGIN TRAN; SELECT TOP (10000) * FROM dbo.events WITH (TABLOCKX); ...</td></tr>
+      <tr><th>value</th><td>440.000000000000000</td></tr>
       
-      <tr><th>blocked_query</th><td>INSERT INTO dbo.events (user_id, type, created_at) VALUES (?, ?, ?)</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding warning">
-  <div class="head">
-    <div class="title">Session 87 blocking 192 (45,300 ms)</div>
-    <div class="slug">bot.block.87_192</div>
-  </div>
-  <p class="desc">LCK_M_X. Blocker: app_service. Blocked: reporting_user.</p>
-  
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>resource</th><td>keylock hobtid=72057594045923328</td></tr>
-      
-      <tr><th>blocker_query</th><td>UPDATE dbo.orders SET status = 'shipped' WHERE id = 1234567</td></tr>
-      
-      <tr><th>blocked_query</th><td>SELECT * FROM dbo.orders WHERE customer_id = 42100</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding warning">
-  <div class="head">
-    <div class="title">tempdb: 2 data file(s), recommended 8</div>
-    <div class="slug">bot.tempdb</div>
-  </div>
-  <p class="desc">Imbalance 1,450 MB. PAGELATCH contention 820s on 2:1:3 (SGAM page).</p>
-  <pre class="rec">ALTER DATABASE tempdb ADD FILE ... ; -- grow to 8 equal files</pre>
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>file_count</th><td>2</td></tr>
-      
-      <tr><th>recommended_file_count</th><td>8</td></tr>
-      
-      <tr><th>imbalance_mb</th><td>1450</td></tr>
-      
-      <tr><th>top_contention_resource</th><td>2:1:3 (SGAM page)</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding warning">
-  <div class="head">
-    <div class="title">PAGEIOLATCH_SH: 32.1%</div>
-    <div class="slug">bot.wait.pageiolatch_sh</div>
-  </div>
-  <p class="desc">Data page read from disk. IO pressure. Check storage latency and buffer pool.</p>
-  
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>rank</th><td>1</td></tr>
-      
-      <tr><th>pct_total_wait</th><td>32.1</td></tr>
-      
-      <tr><th>wait_time_s</th><td>185400</td></tr>
-      
-      <tr><th>signal_wait_time_s</th><td>5200</td></tr>
-      
-      <tr><th>waiting_tasks_count</th><td>14800000</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding warning">
-  <div class="head">
-    <div class="title">Buffer cache hit ratio 93.8%</div>
-    <div class="slug">cap.mem.buffer_cache_hit_ratio</div>
-  </div>
-  <p class="desc">Healthy OLTP sits at 95%+. Correlate with PLE and IO waits.</p>
-  
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>metric</th><td>buffer_cache_hit_ratio</td></tr>
-      
-      <tr><th>value</th><td>93.8</td></tr>
-      
-      <tr><th>unit</th><td>percent</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding warning">
-  <div class="head">
-    <div class="title">Fragmented: IX_events_user_time (25%)</div>
-    <div class="slug">perf.frag.IX_events_user_time</div>
-  </div>
-  <p class="desc">24.6% on dbo.events (92,100 pages). Reorganize.</p>
-  <pre class="rec">ALTER INDEX [IX_events_user_time] ON [dbo].[events] REORGANIZE;</pre>
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>fragmentation_pct</th><td>24.6</td></tr>
-      
-      <tr><th>page_count</th><td>92100</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding warning">
-  <div class="head">
-    <div class="title">Fragmented: IX_order_items_product (22%)</div>
-    <div class="slug">perf.frag.IX_order_items_product</div>
-  </div>
-  <p class="desc">22.1% on dbo.order_items (64,500 pages). Reorganize.</p>
-  <pre class="rec">ALTER INDEX [IX_order_items_product] ON [dbo].[order_items] REORGANIZE;</pre>
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>fragmentation_pct</th><td>22.1</td></tr>
-      
-      <tr><th>page_count</th><td>64500</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding warning">
-  <div class="head">
-    <div class="title">Fragmented: PK_orders (12%)</div>
-    <div class="slug">perf.frag.PK_orders</div>
-  </div>
-  <p class="desc">12.4% on dbo.orders (128,400 pages). Reorganize.</p>
-  <pre class="rec">ALTER INDEX [PK_orders] ON [dbo].[orders] REORGANIZE;</pre>
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>fragmentation_pct</th><td>12.4</td></tr>
-      
-      <tr><th>page_count</th><td>128400</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding warning">
-  <div class="head">
-    <div class="title">Fragmented: PK_products (28%)</div>
-    <div class="slug">perf.frag.PK_products</div>
-  </div>
-  <p class="desc">28.4% on dbo.products (18,200 pages). Reorganize.</p>
-  <pre class="rec">ALTER INDEX [PK_products] ON [dbo].[products] REORGANIZE;</pre>
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>fragmentation_pct</th><td>28.4</td></tr>
-      
-      <tr><th>page_count</th><td>18200</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding warning">
-  <div class="head">
-    <div class="title">Fragmented: PK_sessions (19%)</div>
-    <div class="slug">perf.frag.PK_sessions</div>
-  </div>
-  <p class="desc">18.7% on dbo.sessions (24,800 pages). Reorganize.</p>
-  <pre class="rec">ALTER INDEX [PK_sessions] ON [dbo].[sessions] REORGANIZE;</pre>
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>fragmentation_pct</th><td>18.7</td></tr>
-      
-      <tr><th>page_count</th><td>24800</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding warning">
-  <div class="head">
-    <div class="title">Missing index on dbo.order_items (order_id)</div>
-    <div class="slug">perf.missing_idx.order_items.order_id</div>
-  </div>
-  <p class="desc">Improvement measure 215,000, avg impact 58%, 14,800 seeks.</p>
-  <pre class="rec">CREATE NONCLUSTERED INDEX IX_order_items_order ON dbo.order_items (order_id) INCLUDE (product_id, quantity, unit_price);</pre>
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>improvement_measure</th><td>215000</td></tr>
-      
-      <tr><th>avg_user_impact_pct</th><td>58.3</td></tr>
-      
-      <tr><th>user_seeks</th><td>14800</td></tr>
-      
-      <tr><th>user_scans</th><td>0</td></tr>
-      
-      <tr><th>equality_columns</th><td>order_id</td></tr>
-      
-      <tr><th>inequality_columns</th><td></td></tr>
-      
-      <tr><th>included_columns</th><td>product_id, quantity, unit_price</td></tr>
-      
-    </table>
-  </details>
-  
-</div>
-
-<div class="finding warning">
-  <div class="head">
-    <div class="title">Missing index on dbo.orders (customer_id)</div>
-    <div class="slug">perf.missing_idx.orders.customer_id</div>
-  </div>
-  <p class="desc">Improvement measure 480,000, avg impact 72%, 8,200 seeks.</p>
-  <pre class="rec">CREATE NONCLUSTERED INDEX IX_orders_customer_created ON dbo.orders (customer_id, created_at) INCLUDE (status, total);</pre>
-  
-  <details class="details"><summary>Details</summary>
-    <table>
-      
-      <tr><th>improvement_measure</th><td>480000</td></tr>
-      
-      <tr><th>avg_user_impact_pct</th><td>71.8</td></tr>
-      
-      <tr><th>user_seeks</th><td>8200</td></tr>
-      
-      <tr><th>user_scans</th><td>120</td></tr>
-      
-      <tr><th>equality_columns</th><td>customer_id</td></tr>
-      
-      <tr><th>inequality_columns</th><td>created_at</td></tr>
-      
-      <tr><th>included_columns</th><td>status, total</td></tr>
+      <tr><th>unit</th><td>seconds</td></tr>
       
     </table>
   </details>
@@ -586,19 +272,19 @@
 <div class="finding warning">
   <div class="head">
     <div class="title">Plan: ImplicitConversion</div>
-    <div class="slug">perf.plan.implicitconversion.A1B2C3</div>
+    <div class="slug">perf.plan.implicitconversion.19922F</div>
   </div>
-  <p class="desc">Converting varchar(255) to nvarchar(4000). Index IX_customers_email not used.</p>
+  <p class="desc">Predicate forces convert; index unusable.</p>
   
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>query_text</th><td>SELECT * FROM dbo.customers WHERE email = @email</td></tr>
+      <tr><th>query_text</th><td>if not exists (select * from sys.dm_xe_sessions where name = 'telemetry_xevents')</td></tr>
       
-      <tr><th>query_hash</th><td>0xA1B2C3D4E5F60718</td></tr>
+      <tr><th>query_hash</th><td>0x19922F196E11684F</td></tr>
       
-      <tr><th>column_ref</th><td>dbo.customers.email</td></tr>
+      <tr><th>column_ref</th><td><unknown></td></tr>
       
     </table>
   </details>
@@ -607,20 +293,49 @@
 
 <div class="finding warning">
   <div class="head">
-    <div class="title">Plan: MissingStatistics</div>
-    <div class="slug">perf.plan.missingstatistics.B7C8D9</div>
+    <div class="title">Plan: ImplicitConversion</div>
+    <div class="slug">perf.plan.implicitconversion.23293B</div>
   </div>
-  <p class="desc">Statistics missing on (user_id, type). Cardinality estimate off by 40x.</p>
+  <p class="desc">Predicate forces convert; index unusable.</p>
   
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>query_text</th><td>SELECT COUNT(*) FROM dbo.events WHERE user_id = ? AND type = ?</td></tr>
+      <tr><th>query_text</th><td>WITH plans AS (
+    SELECT
+        qs.query_hash,
+        qp.query_plan,
+        SUBSTRING(
+            st.text,
+            (qs.statement_start_offset / 2) + 1,
+            ((CASE qs.statement_end_offset
+                  WHEN -1 THEN DATALENGTH(st.text)
+                  ELSE qs.statement_end_offset
+              END - qs.statement_start_offset) / 2) + 1
+        ) AS query_text
+    FROM sys.dm_exec_query_stats qs
+    CROSS APPLY sys.dm_exec_query_plan(qs.plan_handle) qp
+    CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) st
+)
+SELECT
+    CONVERT(VARCHAR(64), p.query_hash, 1) AS query_hash,
+    w.warning_type,
+    w.detail,
+    p.query_text,
+    w.column_ref
+FROM plans p
+CROSS APPLY (
+    -- Inline rule set; replace with shred from query_plan XML in v2.
+    SELECT 'ImplicitConversion' AS warning_type,
+           'Predicate forces convert; index unusable.' AS detail,
+           '<unknown>' AS column_ref
+    WHERE p.query_plan.exist('//*:Warnings/*:PlanAffectingConvert') = 1
+) w</td></tr>
       
-      <tr><th>query_hash</th><td>0xB7C8D9E0F1A20304</td></tr>
+      <tr><th>query_hash</th><td>0x23293BDC6E5714D2</td></tr>
       
-      <tr><th>column_ref</th><td>dbo.events.type</td></tr>
+      <tr><th>column_ref</th><td><unknown></td></tr>
       
     </table>
   </details>
@@ -629,20 +344,35 @@
 
 <div class="finding warning">
   <div class="head">
-    <div class="title">Plan: SpillToTempDB</div>
-    <div class="slug">perf.plan.spilltotempdb.3F9A8B</div>
+    <div class="title">Plan: ImplicitConversion</div>
+    <div class="slug">perf.plan.implicitconversion.310DE6</div>
   </div>
-  <p class="desc">Hash match spilled 450 MB to tempdb during aggregation.</p>
+  <p class="desc">Predicate forces convert; index unusable.</p>
   
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>query_text</th><td>... GROUP BY o.id, o.customer_id</td></tr>
+      <tr><th>query_text</th><td>WITH n AS (
+    SELECT TOP (25000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects b
+)
+INSERT orders (customer_id, status, total_cents, created_at)
+SELECT
+    1 + ABS(CHECKSUM(NEWID())) % 5000,
+    CASE ABS(CHECKSUM(NEWID())) % 5
+         WHEN 0 THEN 'pending'
+         WHEN 1 THEN 'paid'
+         WHEN 2 THEN 'shipped'
+         WHEN 3 THEN 'delivered'
+         ELSE 'cancelled' END,
+    500 + (ABS(CHECKSUM(NEWID())) % 50000),
+    DATEADD(MINUTE, -ABS(CHECKSUM(NEWID())) % (60 * 24 * 365), SYSUTCDATETIME())
+FROM n</td></tr>
       
-      <tr><th>query_hash</th><td>0x3F9A8B1C2D4E5F60</td></tr>
+      <tr><th>query_hash</th><td>0x310DE602701F9185</td></tr>
       
-      <tr><th>column_ref</th><td>None</td></tr>
+      <tr><th>column_ref</th><td><unknown></td></tr>
       
     </table>
   </details>
@@ -651,20 +381,30 @@
 
 <div class="finding warning">
   <div class="head">
-    <div class="title">Plan: TableScan</div>
-    <div class="slug">perf.plan.tablescan.3F9A8B</div>
+    <div class="title">Plan: ImplicitConversion</div>
+    <div class="slug">perf.plan.implicitconversion.48F7E3</div>
   </div>
-  <p class="desc">Full table scan over 42M rows. No useful index on actor_id.</p>
+  <p class="desc">Predicate forces convert; index unusable.</p>
   
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>query_text</th><td>SELECT * FROM dbo.audit_log WHERE actor_id = ? ORDER BY created_at DESC</td></tr>
+      <tr><th>query_text</th><td>WITH n AS (
+    SELECT TOP (75000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects b
+)
+INSERT order_items (order_id, product_id, quantity, unit_cents)
+SELECT
+    1 + ABS(CHECKSUM(NEWID())) % 25000,
+    1 + ABS(CHECKSUM(NEWID())) % 500,
+    1 + ABS(CHECKSUM(NEWID())) % 5,
+    100 + (ABS(CHECKSUM(NEWID())) % 9900)
+FROM n</td></tr>
       
-      <tr><th>query_hash</th><td>0x3F9A8B1C2D4E5F60</td></tr>
+      <tr><th>query_hash</th><td>0x48F7E3EED54C9ADE</td></tr>
       
-      <tr><th>column_ref</th><td>dbo.audit_log.actor_id</td></tr>
+      <tr><th>column_ref</th><td><unknown></td></tr>
       
     </table>
   </details>
@@ -673,26 +413,32 @@
 
 <div class="finding warning">
   <div class="head">
-    <div class="title">1,500 ms avg · 8,900 runs</div>
-    <div class="slug">perf.query.7B3C2A1E</div>
+    <div class="title">Plan: ImplicitConversion</div>
+    <div class="slug">perf.plan.implicitconversion.4B9367</div>
   </div>
-  <p class="desc">SELECT c.id, c.email, COUNT(DISTINCT o.id) AS orders FROM dbo.customers c LEFT JOIN dbo.orders o ON o.customer_id = c.id GROUP BY c.id, c...</p>
-  <pre class="rec">SELECT c.id, c.email, COUNT(DISTINCT o.id) AS orders FROM dbo.customers c LEFT JOIN dbo.orders o ON o.customer_id = c.id GROUP BY c.id, c.email HAVING COUNT(DISTINCT o.id) > 5</pre>
+  <p class="desc">Predicate forces convert; index unusable.</p>
+  
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>query_hash</th><td>0x7B3C2A1E4F5D6082</td></tr>
+      <tr><th>query_text</th><td>WITH n AS (
+    SELECT TOP (200000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects b CROSS JOIN sys.all_objects c
+)
+INSERT audit_log (occurred_at, actor, action, payload)
+SELECT
+    DATEADD(SECOND, -ABS(CHECKSUM(NEWID())) % (60 * 60 * 24 * 30), SYSUTCDATETIME()),
+    CONCAT('user', 1 + ABS(CHECKSUM(NEWID())) % 200),
+    CASE ABS(CHECKSUM(NEWID())) % 4
+         WHEN 0 THEN 'login' WHEN 1 THEN 'view'
+         WHEN 2 THEN 'update' ELSE 'logout' END,
+    REPLICATE('x', 200)
+FROM n</td></tr>
       
-      <tr><th>execution_count</th><td>8900</td></tr>
+      <tr><th>query_hash</th><td>0x4B93670200CA047E</td></tr>
       
-      <tr><th>avg_worker_time_ms</th><td>1500</td></tr>
-      
-      <tr><th>total_worker_time_ms</th><td>13350000</td></tr>
-      
-      <tr><th>avg_logical_reads</th><td>84500</td></tr>
-      
-      <tr><th>last_execution_time</th><td>2026-04-17 08:10:41</td></tr>
+      <tr><th>column_ref</th><td><unknown></td></tr>
       
     </table>
   </details>
@@ -701,26 +447,20 @@
 
 <div class="finding warning">
   <div class="head">
-    <div class="title">2,100 ms avg · 42,800 runs</div>
-    <div class="slug">perf.query.A1B2C3D4</div>
+    <div class="title">Plan: ImplicitConversion</div>
+    <div class="slug">perf.plan.implicitconversion.6B190B</div>
   </div>
-  <p class="desc">SELECT TOP 50 p.* FROM dbo.products p WHERE p.name LIKE @search OR p.description LIKE @search ORDER BY p.updated_at DESC</p>
-  <pre class="rec">SELECT TOP 50 p.* FROM dbo.products p WHERE p.name LIKE @search OR p.description LIKE @search ORDER BY p.updated_at DESC</pre>
+  <p class="desc">Predicate forces convert; index unusable.</p>
+  
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>query_hash</th><td>0xA1B2C3D4E5F60718</td></tr>
+      <tr><th>query_text</th><td>SELECT @mstickstime = GETDATE(), @msticks = ms_ticks from sys.dm_os_sys_info</td></tr>
       
-      <tr><th>execution_count</th><td>42800</td></tr>
+      <tr><th>query_hash</th><td>0x6B190B5A26BB6FDB</td></tr>
       
-      <tr><th>avg_worker_time_ms</th><td>2100</td></tr>
-      
-      <tr><th>total_worker_time_ms</th><td>89880000</td></tr>
-      
-      <tr><th>avg_logical_reads</th><td>312000</td></tr>
-      
-      <tr><th>last_execution_time</th><td>2026-04-17 08:14:02</td></tr>
+      <tr><th>column_ref</th><td><unknown></td></tr>
       
     </table>
   </details>
@@ -729,26 +469,20 @@
 
 <div class="finding warning">
   <div class="head">
-    <div class="title">Unused index: IX_audit_log_source</div>
-    <div class="slug">perf.unused_idx.IX_audit_log_source</div>
+    <div class="title">Plan: ImplicitConversion</div>
+    <div class="slug">perf.plan.implicitconversion.6EFBA4</div>
   </div>
-  <p class="desc">dbo.audit_log: 0 reads, 8,400,200 writes, 312 MB.</p>
-  <pre class="rec">DROP INDEX IX_audit_log_source ON dbo.audit_log;</pre>
+  <p class="desc">Predicate forces convert; index unusable.</p>
+  
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>table</th><td>dbo.audit_log</td></tr>
+      <tr><th>query_text</th><td>if exists(select * from sys.server_event_sessions where name='telemetry_xevents')</td></tr>
       
-      <tr><th>size_mb</th><td>312</td></tr>
+      <tr><th>query_hash</th><td>0x6EFBA46B2D06029C</td></tr>
       
-      <tr><th>user_updates</th><td>8400200</td></tr>
-      
-      <tr><th>user_seeks</th><td>0</td></tr>
-      
-      <tr><th>user_scans</th><td>2</td></tr>
-      
-      <tr><th>user_lookups</th><td>0</td></tr>
+      <tr><th>column_ref</th><td><unknown></td></tr>
       
     </table>
   </details>
@@ -757,26 +491,38 @@
 
 <div class="finding warning">
   <div class="head">
-    <div class="title">Unused index: IX_customers_phone_alt</div>
-    <div class="slug">perf.unused_idx.IX_customers_phone_alt</div>
+    <div class="title">Plan: ImplicitConversion</div>
+    <div class="slug">perf.plan.implicitconversion.8B12F4</div>
   </div>
-  <p class="desc">dbo.customers: 0 reads, 1,820,500 writes, 94 MB.</p>
-  <pre class="rec">DROP INDEX IX_customers_phone_alt ON dbo.customers;</pre>
+  <p class="desc">Predicate forces convert; index unusable.</p>
+  
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>table</th><td>dbo.customers</td></tr>
+      <tr><th>query_text</th><td>WITH vlf AS (
+    SELECT
+        d.name AS database_name,
+        (SELECT COUNT(*) FROM sys.dm_db_log_info(d.database_id)) AS vlf_count,
+        (SELECT SUM(size) * 8 / 1024 FROM sys.master_files
+          WHERE database_id = d.database_id AND type_desc = 'LOG') AS log_size_mb
+    FROM sys.databases d
+    WHERE d.database_id > 4
+      AND d.state_desc = 'ONLINE'
+)
+SELECT
+    database_name,
+    vlf_count,
+    log_size_mb,
+    'DBCC SHRINKFILE ([' + database_name + '_log], 0); '
+        + '-- then ALTER DATABASE [' + database_name + '] MODIFY FILE (NAME = ''' + database_name + '_log'', SIZE = '
+        + CAST(log_size_mb AS VARCHAR(20)) + 'MB, FILEGROWTH = 1024MB);' AS recommendation_statement
+FROM vlf
+ORDER BY vlf_count DESC</td></tr>
       
-      <tr><th>size_mb</th><td>94</td></tr>
+      <tr><th>query_hash</th><td>0x8B12F4A465D83DBB</td></tr>
       
-      <tr><th>user_updates</th><td>1820500</td></tr>
-      
-      <tr><th>user_seeks</th><td>0</td></tr>
-      
-      <tr><th>user_scans</th><td>0</td></tr>
-      
-      <tr><th>user_lookups</th><td>0</td></tr>
+      <tr><th>column_ref</th><td><unknown></td></tr>
       
     </table>
   </details>
@@ -785,26 +531,29 @@
 
 <div class="finding warning">
   <div class="head">
-    <div class="title">Unused index: IX_orders_referral_code</div>
-    <div class="slug">perf.unused_idx.IX_orders_referral_code</div>
+    <div class="title">Plan: ImplicitConversion</div>
+    <div class="slug">perf.plan.implicitconversion.9885C2</div>
   </div>
-  <p class="desc">dbo.orders: 0 reads, 4,218,400 writes, 182 MB.</p>
-  <pre class="rec">DROP INDEX IX_orders_referral_code ON dbo.orders;</pre>
+  <p class="desc">Predicate forces convert; index unusable.</p>
+  
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>table</th><td>dbo.orders</td></tr>
+      <tr><th>query_text</th><td>WITH n AS (
+    SELECT TOP (5000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects b
+)
+INSERT customers (email, full_name, created_at)
+SELECT
+    CONCAT('user', i, '@example.com'),
+    CONCAT('Customer ', i),
+    DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 720, SYSUTCDATETIME())
+FROM n</td></tr>
       
-      <tr><th>size_mb</th><td>182</td></tr>
+      <tr><th>query_hash</th><td>0x9885C29AA4D2117D</td></tr>
       
-      <tr><th>user_updates</th><td>4218400</td></tr>
-      
-      <tr><th>user_seeks</th><td>0</td></tr>
-      
-      <tr><th>user_scans</th><td>0</td></tr>
-      
-      <tr><th>user_lookups</th><td>0</td></tr>
+      <tr><th>column_ref</th><td><unknown></td></tr>
       
     </table>
   </details>
@@ -813,26 +562,197 @@
 
 <div class="finding warning">
   <div class="head">
-    <div class="title">Unused index: IX_products_sku_legacy</div>
-    <div class="slug">perf.unused_idx.IX_products_sku_legacy</div>
+    <div class="title">Plan: ImplicitConversion</div>
+    <div class="slug">perf.plan.implicitconversion.DC4ACD</div>
   </div>
-  <p class="desc">dbo.products: 0 reads, 215,400 writes, 28 MB.</p>
-  <pre class="rec">DROP INDEX IX_products_sku_legacy ON dbo.products;</pre>
+  <p class="desc">Predicate forces convert; index unusable.</p>
+  
   
   <details class="details"><summary>Details</summary>
     <table>
       
-      <tr><th>table</th><td>dbo.products</td></tr>
+      <tr><th>query_text</th><td>WITH n AS (
+    SELECT TOP (500) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects
+)
+INSERT products (sku, name, price_cents)
+SELECT
+    CONCAT('SKU-', RIGHT('00000' + CAST(i AS VARCHAR(5)), 5)),
+    CONCAT('Product ', i),
+    100 + (ABS(CHECKSUM(NEWID())) % 9900)
+FROM n</td></tr>
       
-      <tr><th>size_mb</th><td>28</td></tr>
+      <tr><th>query_hash</th><td>0xDC4ACDF0821D2007</td></tr>
       
-      <tr><th>user_updates</th><td>215400</td></tr>
+      <tr><th>column_ref</th><td><unknown></td></tr>
       
-      <tr><th>user_seeks</th><td>0</td></tr>
+    </table>
+  </details>
+  
+</div>
+
+<div class="finding warning">
+  <div class="head">
+    <div class="title">Plan: ImplicitConversion</div>
+    <div class="slug">perf.plan.implicitconversion.F7F1E3</div>
+  </div>
+  <p class="desc">Predicate forces convert; index unusable.</p>
+  
+  
+  <details class="details"><summary>Details</summary>
+    <table>
       
-      <tr><th>user_scans</th><td>0</td></tr>
+      <tr><th>query_text</th><td>WITH Quartiles AS (
+                SELECT DISTINCT
+                    CONVERT(VARCHAR(10), CAST(DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime) AS DATE), 112) EventDate,
+                       CONVERT(VARCHAR(30), TIMEFROMPARTS(DATEPART(HOUR, DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime)), 00,00,00,00), 114) AS [EventTime],
+                       PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY record.value('(Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]', 'int')
+                           )
+                           OVER (PARTITION BY CONVERT(VARCHAR(10), CAST(DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime) AS DATE), 112),
+                                  CONVERT(VARCHAR(30), TIMEFROMPARTS(DATEPART(HOUR, DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime)), 00,00,00,00), 114)
+                           ) AS MedianSQLCPU
+                           ,
+                       PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY record.value('(Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]', 'int')
+                           )
+                           OVER (PARTITION BY CONVERT(VARCHAR(10), CAST(DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime) AS DATE), 112),
+                                  CONVERT(VARCHAR(30), TIMEFROMPARTS(DATEPART(HOUR, DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime)), 00,00,00,00), 114)
+                           ) AS Q3SQLCPU
+                     ,
+                       PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY record.value('(Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]', 'int')
+                           )
+                           OVER (PARTITION BY CONVERT(VARCHAR(10), CAST(DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime) AS DATE), 112),
+                                  CONVERT(VARCHAR(30), TIMEFROMPARTS(DATEPART(HOUR, DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime)), 00,00,00,00), 114)
+                           ) AS Q1SQLCPU
+                  FROM (
+                    SELECT timestamp, CONVERT (xml, record) AS 'record'
+                    FROM sys.dm_os_ring_buffers
+                    WHERE ring_buffer_type = 'RING_BUFFER_SCHEDULER_MONITOR'
+                      AND record LIKE '%<SystemHealth>%'
+                            ) AS t
+                     WHERE DATEPART(HOUR, DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime)) = DATEPART(HOUR, @LastHour)
+                     AND CAST(DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime) AS DATE) = CAST(@LastHour AS DATE)
+              ),
+              SimpleStats AS (
+                SELECT
+                    CONVERT(VARCHAR(10), CAST(DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime) AS DATE), 112) EventDate,
+                       CONVERT(VARCHAR(30), TIMEFROMPARTS(DATEPART(HOUR, DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime)), 00,00,00,00), 114) AS [EventTime],
+                    MAX(record.value('(Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]', 'int')) AS [MaxSQLCPU],
+                       MIN(record.value('(Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]', 'int')) AS [MinSQLCPU],
+                       AVG(record.value('(Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]', 'int')) AS [AvgSQLCPU]
+                  FROM (
+                    SELECT timestamp, CONVERT (xml, record) AS 'record'
+                    FROM sys.dm_os_ring_buffers
+                    WHERE ring_buffer_type = 'RING_BUFFER_SCHEDULER_MONITOR'
+                      AND record LIKE '%<SystemHealth>%'
+                            ) AS t
+              WHERE DATEPART(HOUR, DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime)) = DATEPART(HOUR, @LastHour)
+                     AND CAST(DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime) AS DATE) = CAST(@LastHour AS DATE)
+              GROUP BY
+                     CONVERT(VARCHAR(10), CAST(DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime) AS DATE), 112) ,
+                     CONVERT(VARCHAR(30), TIMEFROMPARTS(DATEPART(HOUR, DATEADD (ms, -1 * (@msticks - [timestamp]),@mstickstime)), 00,00,00,00), 114)
+              )
+              SELECT
+                     ss.EventDate AS EventDate,
+                     ss.EventTime AS EventTime,
+                     ss.MaxSQLCPU,
+                     ss.MinSQLCPU,
+                     ss.AvgSQLCPU,
+                     q.MedianSQLCPU,
+                     q.Q1SQLCPU,
+                     q.Q3SQLCPU
+              FROM SimpleStats ss
+                     INNER JOIN Quartiles q
+                           ON q.EventDate = ss.EventDate
+                           AND q.EventTime = ss.EventTime</td></tr>
       
-      <tr><th>user_lookups</th><td>0</td></tr>
+      <tr><th>query_hash</th><td>0xF7F1E3F037710074</td></tr>
+      
+      <tr><th>column_ref</th><td><unknown></td></tr>
+      
+    </table>
+  </details>
+  
+</div>
+
+<div class="finding warning">
+  <div class="head">
+    <div class="title">1,837 ms avg · 1 runs</div>
+    <div class="slug">perf.query.b'\xe6\x02p\x1f\x91\x85'</div>
+  </div>
+  <p class="desc">WITH n AS (
+    SELECT TOP (25000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects ...</p>
+  <pre class="rec">WITH n AS (
+    SELECT TOP (25000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects b
+)
+INSERT orders (customer_id, status, total_cents, created_at)
+SELECT
+    1 + ABS(CHECKSUM(NEWID())) % 5000,
+    CASE ABS(CHECKSUM(NEWID())) % 5
+         WHEN 0 THEN 'pending'
+         WHEN 1 THEN 'paid'
+         WHEN 2 THEN 'shipped'
+         WHEN 3 THEN 'delivered'
+         ELSE 'cancelled' END,
+    500 + (ABS(CHECKSUM(NEWID())) % 50000),
+    DATEADD(MINUTE, -ABS(CHECKSUM(NEWID())) % (60 * 24 * 365), SYSUTCDATETIME())
+FROM n</pre>
+  
+  <details class="details"><summary>Details</summary>
+    <table>
+      
+      <tr><th>query_hash</th><td>b'1\r\xe6\x02p\x1f\x91\x85'</td></tr>
+      
+      <tr><th>execution_count</th><td>1</td></tr>
+      
+      <tr><th>avg_worker_time_ms</th><td>1837</td></tr>
+      
+      <tr><th>total_worker_time_ms</th><td>1837</td></tr>
+      
+      <tr><th>avg_logical_reads</th><td>57453</td></tr>
+      
+      <tr><th>last_execution_time</th><td>2026-04-18 22:33:39.917000</td></tr>
+      
+    </table>
+  </details>
+  
+</div>
+
+<div class="finding warning">
+  <div class="head">
+    <div class="title">2,158 ms avg · 1 runs</div>
+    <div class="slug">perf.query.b'\xff\xe0\x8e\xb4\xba\xb7'</div>
+  </div>
+  <p class="desc">WITH n AS (
+    SELECT TOP (40000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects ...</p>
+  <pre class="rec">WITH n AS (
+    SELECT TOP (40000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects b
+)
+INSERT audit_log (occurred_at, actor, action, payload)
+SELECT
+    DATEADD(SECOND, -ABS(CHECKSUM(NEWID())) % (60 * 60 * 24 * 7), SYSUTCDATETIME()),
+    CONCAT('user', 1 + ABS(CHECKSUM(NEWID())) % 200),
+    'view',
+    REPLICATE('y', 200)
+FROM n</pre>
+  
+  <details class="details"><summary>Details</summary>
+    <table>
+      
+      <tr><th>query_hash</th><td>b'&\xba\xff\xe0\x8e\xb4\xba\xb7'</td></tr>
+      
+      <tr><th>execution_count</th><td>1</td></tr>
+      
+      <tr><th>avg_worker_time_ms</th><td>2158</td></tr>
+      
+      <tr><th>total_worker_time_ms</th><td>2158</td></tr>
+      
+      <tr><th>avg_logical_reads</th><td>279142</td></tr>
+      
+      <tr><th>last_execution_time</th><td>2026-04-18 22:33:53.890000</td></tr>
       
     </table>
   </details>
@@ -842,183 +762,169 @@
 
 
 
-<h2 class="section">Informational <span class="count">(29)</span></h2>
+<h2 class="section">Informational <span class="count">(25)</span></h2>
 <div class="info-table">
   <table>
     <tr><th style="width: 28%;">Finding</th><th style="width: 52%;">Description</th><th style="width: 20%;">ID</th></tr>
     
     <tr>
-      <td class="title">ASYNC_NETWORK_IO: 7.2%</td>
-      <td>Client slow to consume results. Almost always client-side.</td>
-      <td class="slug">bot.wait.async_network_io</td>
-    </tr>
-    
-    <tr>
-      <td class="title">CXCONSUMER: 2.1%</td>
-      <td>Parallelism consumer wait. Not actionable on its own.</td>
-      <td class="slug">bot.wait.cxconsumer</td>
-    </tr>
-    
-    <tr>
-      <td class="title">CXPACKET: 22.5%</td>
+      <td class="title">CXPACKET: 8.8%</td>
       <td>Parallelism coordination. Usually benign. Check MAXDOP only if dominant.</td>
       <td class="slug">bot.wait.cxpacket</td>
     </tr>
     
     <tr>
-      <td class="title">LCK_M_S: 3.2%</td>
+      <td class="title">IO_COMPLETION: 2.1%</td>
+      <td>Wait type IO_COMPLETION.</td>
+      <td class="slug">bot.wait.io_completion</td>
+    </tr>
+    
+    <tr>
+      <td class="title">LATCH_EX: 3.7%</td>
+      <td>Wait type LATCH_EX.</td>
+      <td class="slug">bot.wait.latch_ex</td>
+    </tr>
+    
+    <tr>
+      <td class="title">LCK_M_S: 4.3%</td>
       <td>Shared lock wait. Readers blocked by writers. Consider RCSI.</td>
       <td class="slug">bot.wait.lck_m_s</td>
     </tr>
     
     <tr>
-      <td class="title">LCK_M_X: 8.5%</td>
-      <td>Exclusive lock wait. Look at current blocking and long transactions.</td>
-      <td class="slug">bot.wait.lck_m_x</td>
+      <td class="title">LCK_M_SCH_M: 16.8%</td>
+      <td>Wait type LCK_M_SCH_M.</td>
+      <td class="slug">bot.wait.lck_m_sch_m</td>
     </tr>
     
     <tr>
-      <td class="title">PAGELATCH_EX: 4.8%</td>
-      <td>In-memory page contention, typically tempdb allocation. Bump tempdb file count.</td>
-      <td class="slug">bot.wait.pagelatch_ex</td>
+      <td class="title">LCK_M_SCH_S: 8.5%</td>
+      <td>Wait type LCK_M_SCH_S.</td>
+      <td class="slug">bot.wait.lck_m_sch_s</td>
     </tr>
     
     <tr>
-      <td class="title">RESOURCE_SEMAPHORE: 1.2%</td>
-      <td>Memory grant queue. Critical when sustained.</td>
-      <td class="slug">bot.wait.resource_semaphore</td>
+      <td class="title">LCK_M_U: 14.3%</td>
+      <td>Update lock wait during UPDATE/DELETE scan. Usually fixed by a better index.</td>
+      <td class="slug">bot.wait.lck_m_u</td>
     </tr>
     
     <tr>
-      <td class="title">SOS_SCHEDULER_YIELD: 6.1%</td>
-      <td>CPU pressure. Top CPU consumers; parallelism.</td>
-      <td class="slug">bot.wait.sos_scheduler_yield</td>
+      <td class="title">PAGEIOLATCH_SH: 5.4%</td>
+      <td>Data page read from disk. IO pressure. Check storage latency and buffer pool.</td>
+      <td class="slug">bot.wait.pageiolatch_sh</td>
     </tr>
     
     <tr>
-      <td class="title">WRITELOG: 12.3%</td>
+      <td class="title">PAGEIOLATCH_UP: 2.6%</td>
+      <td>Wait type PAGEIOLATCH_UP.</td>
+      <td class="slug">bot.wait.pageiolatch_up</td>
+    </tr>
+    
+    <tr>
+      <td class="title">PAGELATCH_UP: 4.0%</td>
+      <td>Wait type PAGELATCH_UP.</td>
+      <td class="slug">bot.wait.pagelatch_up</td>
+    </tr>
+    
+    <tr>
+      <td class="title">PREEMPTIVE_OS_CRYPTOPS: 2.2%</td>
+      <td>Wait type PREEMPTIVE_OS_CRYPTOPS.</td>
+      <td class="slug">bot.wait.preemptive_os_cryptops</td>
+    </tr>
+    
+    <tr>
+      <td class="title">PREEMPTIVE_OS_FILEOPS: 2.9%</td>
+      <td>Wait type PREEMPTIVE_OS_FILEOPS.</td>
+      <td class="slug">bot.wait.preemptive_os_fileops</td>
+    </tr>
+    
+    <tr>
+      <td class="title">PREEMPTIVE_OS_WRITEFILE: 4.2%</td>
+      <td>Wait type PREEMPTIVE_OS_WRITEFILE.</td>
+      <td class="slug">bot.wait.preemptive_os_writefile</td>
+    </tr>
+    
+    <tr>
+      <td class="title">SLEEP_MASTERUPGRADED: 7.0%</td>
+      <td>Wait type SLEEP_MASTERUPGRADED.</td>
+      <td class="slug">bot.wait.sleep_masterupgraded</td>
+    </tr>
+    
+    <tr>
+      <td class="title">WRITELOG: 4.7%</td>
       <td>Log writer flush wait. Log IO latency. Faster log storage or smaller txns.</td>
       <td class="slug">bot.wait.writelog</td>
     </tr>
     
     <tr>
-      <td class="title">184 × app_service from web-prod-02</td>
-      <td>Node.js Driver · status running.</td>
-      <td class="slug">cap.sess.app_service.web-prod-02</td>
+      <td class="title">1 × NT AUTHORITY\SYSTEM from 9a6635a9bb2b</td>
+      <td>SQLServerCEIP · status sleeping.</td>
+      <td class="slug">cap.sess.NT AUTHORITY\SYSTEM.9a6635a9bb2b</td>
     </tr>
     
     <tr>
-      <td class="title">42 × app_service from web-prod-03</td>
-      <td>Node.js Driver · status sleeping.</td>
-      <td class="slug">cap.sess.app_service.web-prod-03</td>
+      <td class="title">1 × sa from npidev-script</td>
+      <td>python3.12 · status running.</td>
+      <td class="slug">cap.sess.sa.npidev-script</td>
     </tr>
     
     <tr>
-      <td class="title">3 × dba_readonly from ops-laptop</td>
-      <td>SSMS · status sleeping.</td>
-      <td class="slug">cap.sess.dba_readonly.ops-laptop</td>
-    </tr>
-    
-    <tr>
-      <td class="title">8 × etl_pipeline from etl-01</td>
-      <td>.Net SqlClient Data Provider · status running.</td>
-      <td class="slug">cap.sess.etl_pipeline.etl-01</td>
-    </tr>
-    
-    <tr>
-      <td class="title">12 × reporting_user from bi-01</td>
-      <td>Power BI · status running.</td>
-      <td class="slug">cap.sess.reporting_user.bi-01</td>
-    </tr>
-    
-    <tr>
-      <td class="title">shopdb: 102,400 MB data, 12,100 MB log</td>
-      <td>Largest table: dbo.audit_log (42,100 MB).</td>
+      <td class="title">shopdb: 126 MB data, 1 MB log</td>
+      <td>Largest table: dbo.audit_log (116 MB).</td>
       <td class="slug">hlt.size.shopdb</td>
     </tr>
     
     <tr>
-      <td class="title">9 indexes below 10% fragmentation</td>
+      <td class="title">1 indexes below 10% fragmentation</td>
       <td>No maintenance needed. Sampled in SAMPLED mode.</td>
       <td class="slug">perf.frag.summary</td>
     </tr>
     
     <tr>
-      <td class="title">Missing index on dbo.audit_log (created_at)</td>
-      <td>Improvement measure 38,000, avg impact 28%, 180 seeks.</td>
-      <td class="slug">perf.missing_idx.audit_log.created_at</td>
+      <td class="title">Missing index on dbo.customers ([email])</td>
+      <td>Improvement measure 916, avg impact 15%, 60 seeks.</td>
+      <td class="slug">perf.missing_idx.customers.[email]</td>
     </tr>
     
     <tr>
-      <td class="title">Missing index on dbo.events (user_id)</td>
-      <td>Improvement measure 42,000, avg impact 64%, 4,200 seeks.</td>
-      <td class="slug">perf.missing_idx.events.user_id</td>
+      <td class="title">Missing index on dbo.orders ([customer_id])</td>
+      <td>Improvement measure 4,939, avg impact 82%, 60 seeks.</td>
+      <td class="slug">perf.missing_idx.orders.[customer_id]</td>
     </tr>
     
     <tr>
-      <td class="title">Missing index on dbo.products (category_id)</td>
-      <td>Improvement measure 7,800, avg impact 18%, 1,200 seeks.</td>
-      <td class="slug">perf.missing_idx.products.category_id</td>
+      <td class="title">87 ms avg · 3 runs</td>
+      <td>WITH plans AS (
+    SELECT
+        qs.query_hash,
+        qp.query_plan,
+        SUBSTRING(
+            st.text,
+            (qs.statemen...</td>
+      <td class="slug">perf.query.b';\xdcnW\x14\xd2'</td>
     </tr>
     
     <tr>
-      <td class="title">Plan: ColumnsWithNoStatistics</td>
-      <td>Column dbo.reviews.is_moderated has no statistics.</td>
-      <td class="slug">perf.plan.columnswithnostatistics.55AA66</td>
+      <td class="title">295 ms avg · 1 runs</td>
+      <td>WITH n AS (
+    SELECT TOP (5000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects b...</td>
+      <td class="slug">perf.query.b'\xc2\x9a\xa4\xd2\x11}'</td>
     </tr>
     
     <tr>
-      <td class="title">Plan: ColumnsWithNoStatistics</td>
-      <td>Column dbo.shipments.carrier has no statistics.</td>
-      <td class="slug">perf.plan.columnswithnostatistics.66AA77</td>
+      <td class="title">412 ms avg · 1 runs</td>
+      <td>WITH n AS (
+    SELECT TOP (75000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
+    FROM sys.all_objects a CROSS JOIN sys.all_objects ...</td>
+      <td class="slug">perf.query.b'\xe3\xee\xd5L\x9a\xde'</td>
     </tr>
     
     <tr>
-      <td class="title">Plan: ColumnsWithNoStatistics</td>
-      <td>Column dbo.notifications.channel has no statistics.</td>
-      <td class="slug">perf.plan.columnswithnostatistics.77AA88</td>
-    </tr>
-    
-    <tr>
-      <td class="title">10 ms avg · 12,400 runs</td>
-      <td>SELECT id, name, price FROM dbo.products WHERE id IN (?, ?, ?, ?, ?)</td>
-      <td class="slug">perf.query.11223344</td>
-    </tr>
-    
-    <tr>
-      <td class="title">15 ms avg · 38,900 runs</td>
-      <td>SELECT token, user_id FROM dbo.sessions WHERE token = @t AND expires_at > SYSUTCDATETIME()</td>
-      <td class="slug">perf.query.9988AABB</td>
-    </tr>
-    
-    <tr>
-      <td class="title">20 ms avg · 54,200 runs</td>
-      <td>INSERT INTO dbo.events (user_id, type, created_at) VALUES (?, ?, ?)</td>
-      <td class="slug">perf.query.AA55BB66</td>
-    </tr>
-    
-    <tr>
-      <td class="title">8 ms avg · 6,200 runs</td>
-      <td>SELECT * FROM dbo.carts WHERE customer_id = @cid AND status = 'open'</td>
-      <td class="slug">perf.query.ABCDEF01</td>
-    </tr>
-    
-    <tr>
-      <td class="title">90 ms avg · 215,000 runs</td>
-      <td>SELECT * FROM dbo.customers WHERE id = @id</td>
-      <td class="slug">perf.query.CC11AA22</td>
-    </tr>
-    
-    <tr>
-      <td class="title">40 ms avg · 184,000 runs</td>
-      <td>SELECT id, total, status FROM dbo.orders WHERE customer_id = @cid</td>
-      <td class="slug">perf.query.DEAD0001</td>
-    </tr>
-    
-    <tr>
-      <td class="title">35 ms avg · 97,500 runs</td>
-      <td>UPDATE dbo.sessions SET last_seen = SYSUTCDATETIME() WHERE token = @t</td>
-      <td class="slug">perf.query.FEED0003</td>
+      <td class="title">596 ms avg · 1 runs</td>
+      <td>DELETE FROM audit_log WHERE audit_id % 5 = 0</td>
+      <td class="slug">perf.query.b'_\xde\xba\xad:,'</td>
     </tr>
     
   </table>
@@ -1032,18 +938,18 @@
     
     <tr>
       <td class="cat-name">performance</td>
-      <td class="num">3</td>
-      <td class="num">17</td>
-      <td class="num">14</td>
-      <td class="num"><b>34</b></td>
+      <td class="num">1</td>
+      <td class="num">13</td>
+      <td class="num">7</td>
+      <td class="num"><b>21</b></td>
     </tr>
     
     <tr>
       <td class="cat-name">bottlenecks</td>
       <td class="num">0</td>
-      <td class="num">4</td>
-      <td class="num">9</td>
-      <td class="num"><b>13</b></td>
+      <td class="num">0</td>
+      <td class="num">15</td>
+      <td class="num"><b>15</b></td>
     </tr>
     
     <tr>
@@ -1056,24 +962,15 @@
     
     <tr>
       <td class="cat-name">capacity</td>
+      <td class="num">0</td>
       <td class="num">1</td>
-      <td class="num">1</td>
-      <td class="num">5</td>
-      <td class="num"><b>7</b></td>
+      <td class="num">2</td>
+      <td class="num"><b>3</b></td>
     </tr>
     
   </table>
 </div>
 
-
-<h2 class="section">Probes that failed</h2>
-<div class="info-table">
-  <table>
-    
-    <tr><td class="slug" style="width: 30%;">query_store_top_queries</td><td>Query Store is not enabled on this database (falling back to sys.dm_exec_query_stats)</td></tr>
-    
-  </table>
-</div>
 
 
 <footer class="bottom">

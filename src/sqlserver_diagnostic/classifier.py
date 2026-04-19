@@ -406,11 +406,12 @@ def _memory_pressure(rows):
         metric, val = r["metric"], r["value"]
 
         if metric == "page_life_expectancy":
-            if val < S.PLE_CRITICAL:
-                sev, title = Severity.CRITICAL, f"PLE critically low: {val}s"
+            v = int(val)  # comes back as Decimal from the perf-counters DMV
+            if v < S.PLE_CRITICAL:
+                sev, title = Severity.CRITICAL, f"PLE critically low: {v}s"
                 desc = "Buffer pool is churning. Add memory or reduce IO."
-            elif val < S.PLE_WARNING:
-                sev, title = Severity.WARNING, f"PLE low: {val}s"
+            elif v < S.PLE_WARNING:
+                sev, title = Severity.WARNING, f"PLE low: {v}s"
                 desc = "Watch for sustained drops under peak load."
             else:
                 continue  # healthy PLE is not interesting

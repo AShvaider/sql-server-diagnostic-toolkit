@@ -19,4 +19,7 @@ SELECT TOP 25
 FROM sys.dm_exec_query_stats qs
 CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) st
 WHERE qs.execution_count > 0
+  -- Skip statements averaging under 50ms. Cache is full of trivial DMV
+  -- self-queries; anything that actually matters runs longer than this.
+  AND (qs.total_worker_time / qs.execution_count) >= 50000
 ORDER BY (qs.total_worker_time / qs.execution_count) DESC;

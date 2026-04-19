@@ -172,7 +172,7 @@ def _top_slow_queries(rows):
     return findings
 
 
-# TODO: SpillToTempDB and TableScan aren't always warnings — a scan on a small
+# TODO: SpillToTempDB and TableScan aren't always warnings; scan on a small
 # lookup table is fine. Revisit when we wire this up against Query Store.
 _PLAN_WARNING_SEVERITY = {
     "ImplicitConversion":       Severity.WARNING,
@@ -218,7 +218,7 @@ def _wait_stats(rows):
             id=f"bot.wait.{wt.lower()}",
             category="bottlenecks",
             severity=sev,
-            title=f"{wt} — {pct:.1f}%",
+            title=f"{wt}: {pct:.1f}%",
             description=f"{blurb} {direction}".strip(),
             details={
                 "rank": r["rank"],
@@ -432,7 +432,7 @@ def _memory_pressure(rows):
             desc = "Queries queued for workspace memory. Investigate large sorts/hashes."
 
         else:
-            # Unknown metric — keep as info, don't try to classify.
+            # Unknown metric. Keep as info, don't try to classify.
             sev, title, desc = Severity.INFO, f"{metric}: {val}", ""
 
         findings.append(Finding(

@@ -1,6 +1,6 @@
-# shopdb — diagnostic report
+# shopdb diagnostic report
 
-`prod-sql-01.internal,1433` · SQL Server 2022 (RTM-CU10) Standard Edition · scanned 2026-04-18 21:53 UTC
+`prod-sql-01.internal,1433` · SQL Server 2022 (RTM-CU10) Standard Edition · scanned 2026-04-18 22:19 UTC
 
 **Action required.** 6 critical, 22 warning, 29 info.
 
@@ -57,7 +57,7 @@ SELECT o.id, o.customer_id, SUM(oi.quantity * oi.unit_price) AS total FROM dbo.o
 | Session 104 blocking 227 (12,800 ms) | `bot.block.104_227` |
 | Session 87 blocking 192 (45,300 ms) | `bot.block.87_192` |
 | tempdb: 2 data file(s), recommended 8 | `bot.tempdb` |
-| PAGEIOLATCH_SH — 32.1% | `bot.wait.pageiolatch_sh` |
+| PAGEIOLATCH_SH: 32.1% | `bot.wait.pageiolatch_sh` |
 | Buffer cache hit ratio 93.8% | `cap.mem.buffer_cache_hit_ratio` |
 | Fragmented: IX_events_user_time (25%) | `perf.frag.IX_events_user_time` |
 | Fragmented: IX_order_items_product (22%) | `perf.frag.IX_order_items_product` |
@@ -81,15 +81,15 @@ SELECT o.id, o.customer_id, SUM(oi.quantity * oi.unit_price) AS total FROM dbo.o
 
 | Finding | ID |
 | --- | --- |
-| ASYNC_NETWORK_IO — 7.2% | `bot.wait.async_network_io` |
-| CXCONSUMER — 2.1% | `bot.wait.cxconsumer` |
-| CXPACKET — 22.5% | `bot.wait.cxpacket` |
-| LCK_M_S — 3.2% | `bot.wait.lck_m_s` |
-| LCK_M_X — 8.5% | `bot.wait.lck_m_x` |
-| PAGELATCH_EX — 4.8% | `bot.wait.pagelatch_ex` |
-| RESOURCE_SEMAPHORE — 1.2% | `bot.wait.resource_semaphore` |
-| SOS_SCHEDULER_YIELD — 6.1% | `bot.wait.sos_scheduler_yield` |
-| WRITELOG — 12.3% | `bot.wait.writelog` |
+| ASYNC_NETWORK_IO: 7.2% | `bot.wait.async_network_io` |
+| CXCONSUMER: 2.1% | `bot.wait.cxconsumer` |
+| CXPACKET: 22.5% | `bot.wait.cxpacket` |
+| LCK_M_S: 3.2% | `bot.wait.lck_m_s` |
+| LCK_M_X: 8.5% | `bot.wait.lck_m_x` |
+| PAGELATCH_EX: 4.8% | `bot.wait.pagelatch_ex` |
+| RESOURCE_SEMAPHORE: 1.2% | `bot.wait.resource_semaphore` |
+| SOS_SCHEDULER_YIELD: 6.1% | `bot.wait.sos_scheduler_yield` |
+| WRITELOG: 12.3% | `bot.wait.writelog` |
 | 184 × app_service from web-prod-02 | `cap.sess.app_service.web-prod-02` |
 | 42 × app_service from web-prod-03 | `cap.sess.app_service.web-prod-03` |
 | 3 × dba_readonly from ops-laptop | `cap.sess.dba_readonly.ops-laptop` |
@@ -113,4 +113,4 @@ SELECT o.id, o.customer_id, SUM(oi.quantity * oi.unit_price) AS total FROM dbo.o
 
 ## Probes that failed
 
-- `query_store_top_queries` — Query Store is not enabled on this database (falling back to sys.dm_exec_query_stats)
+- `query_store_top_queries`: Query Store is not enabled on this database (falling back to sys.dm_exec_query_stats)

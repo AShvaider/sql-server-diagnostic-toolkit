@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>shopdb — diagnostic report</title>
+<title>shopdb diagnostic report</title>
 <style>
   :root {
     --bg: #fafaf7;
@@ -135,7 +135,7 @@
     <span class="tag">Read-only scan</span><br>
     <b>shopdb</b> on <code>prod-sql-01.internal,1433</code><br>
     SQL Server 2022 (RTM-CU10) Standard Edition<br>
-    <span style="color: var(--ink-3);">Scanned 2026-04-18 21:53 UTC · 3.8s</span>
+    <span style="color: var(--ink-3);">Scanned 2026-04-18 22:19 UTC · 3.8s</span>
   </div>
 </header>
 
@@ -377,7 +377,7 @@
 
 <div class="finding warning">
   <div class="head">
-    <div class="title">PAGEIOLATCH_SH — 32.1%</div>
+    <div class="title">PAGEIOLATCH_SH: 32.1%</div>
     <div class="slug">bot.wait.pageiolatch_sh</div>
   </div>
   <p class="desc">Data page read from disk. IO pressure. Check storage latency and buffer pool.</p>
@@ -848,55 +848,55 @@
     <tr><th style="width: 28%;">Finding</th><th style="width: 52%;">Description</th><th style="width: 20%;">ID</th></tr>
     
     <tr>
-      <td class="title">ASYNC_NETWORK_IO — 7.2%</td>
+      <td class="title">ASYNC_NETWORK_IO: 7.2%</td>
       <td>Client slow to consume results. Almost always client-side.</td>
       <td class="slug">bot.wait.async_network_io</td>
     </tr>
     
     <tr>
-      <td class="title">CXCONSUMER — 2.1%</td>
+      <td class="title">CXCONSUMER: 2.1%</td>
       <td>Parallelism consumer wait. Not actionable on its own.</td>
       <td class="slug">bot.wait.cxconsumer</td>
     </tr>
     
     <tr>
-      <td class="title">CXPACKET — 22.5%</td>
+      <td class="title">CXPACKET: 22.5%</td>
       <td>Parallelism coordination. Usually benign. Check MAXDOP only if dominant.</td>
       <td class="slug">bot.wait.cxpacket</td>
     </tr>
     
     <tr>
-      <td class="title">LCK_M_S — 3.2%</td>
+      <td class="title">LCK_M_S: 3.2%</td>
       <td>Shared lock wait. Readers blocked by writers. Consider RCSI.</td>
       <td class="slug">bot.wait.lck_m_s</td>
     </tr>
     
     <tr>
-      <td class="title">LCK_M_X — 8.5%</td>
+      <td class="title">LCK_M_X: 8.5%</td>
       <td>Exclusive lock wait. Look at current blocking and long transactions.</td>
       <td class="slug">bot.wait.lck_m_x</td>
     </tr>
     
     <tr>
-      <td class="title">PAGELATCH_EX — 4.8%</td>
+      <td class="title">PAGELATCH_EX: 4.8%</td>
       <td>In-memory page contention, typically tempdb allocation. Bump tempdb file count.</td>
       <td class="slug">bot.wait.pagelatch_ex</td>
     </tr>
     
     <tr>
-      <td class="title">RESOURCE_SEMAPHORE — 1.2%</td>
+      <td class="title">RESOURCE_SEMAPHORE: 1.2%</td>
       <td>Memory grant queue. Critical when sustained.</td>
       <td class="slug">bot.wait.resource_semaphore</td>
     </tr>
     
     <tr>
-      <td class="title">SOS_SCHEDULER_YIELD — 6.1%</td>
+      <td class="title">SOS_SCHEDULER_YIELD: 6.1%</td>
       <td>CPU pressure. Top CPU consumers; parallelism.</td>
       <td class="slug">bot.wait.sos_scheduler_yield</td>
     </tr>
     
     <tr>
-      <td class="title">WRITELOG — 12.3%</td>
+      <td class="title">WRITELOG: 12.3%</td>
       <td>Log writer flush wait. Log IO latency. Faster log storage or smaller txns.</td>
       <td class="slug">bot.wait.writelog</td>
     </tr>

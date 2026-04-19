@@ -91,7 +91,7 @@ def write_markdown(summary, path):
     info = summary["by_severity"]["info"]
 
     buf = [
-        f"# {si['database_name']} — diagnostic report",
+        f"# {si['database_name']} diagnostic report",
         "",
         f"`{si['server_name']}` · {si['sql_version']} · scanned {summary['generated_at']}",
         "",
@@ -133,7 +133,7 @@ def write_markdown(summary, path):
     if summary.get("errors"):
         buf += ["## Probes that failed", ""]
         for e in summary["errors"]:
-            buf.append(f"- `{e['probe']}` — {e['error']}")
+            buf.append(f"- `{e['probe']}`: {e['error']}")
         buf.append("")
 
     path.write_text("\n".join(buf), encoding="utf-8")

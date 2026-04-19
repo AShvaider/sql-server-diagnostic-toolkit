@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-18 21:53 UTC",
+  "generated_at": "2026-04-18 22:19 UTC",
   "tool_version": "0.1.0",
   "server_info": {
     "server_name": "prod-sql-01.internal,1433",
@@ -155,7 +155,7 @@
         "id": "bot.wait.pageiolatch_sh",
         "category": "bottlenecks",
         "severity": "warning",
-        "title": "PAGEIOLATCH_SH \u2014 32.1%",
+        "title": "PAGEIOLATCH_SH: 32.1%",
         "description": "Data page read from disk. IO pressure. Check storage latency and buffer pool.",
         "recommendation": "",
         "details": {
@@ -427,7 +427,7 @@
         "id": "bot.wait.async_network_io",
         "category": "bottlenecks",
         "severity": "info",
-        "title": "ASYNC_NETWORK_IO \u2014 7.2%",
+        "title": "ASYNC_NETWORK_IO: 7.2%",
         "description": "Client slow to consume results. Almost always client-side.",
         "recommendation": "",
         "details": {
@@ -442,7 +442,7 @@
         "id": "bot.wait.cxconsumer",
         "category": "bottlenecks",
         "severity": "info",
-        "title": "CXCONSUMER \u2014 2.1%",
+        "title": "CXCONSUMER: 2.1%",
         "description": "Parallelism consumer wait. Not actionable on its own.",
         "recommendation": "",
         "details": {
@@ -457,7 +457,7 @@
         "id": "bot.wait.cxpacket",
         "category": "bottlenecks",
         "severity": "info",
-        "title": "CXPACKET \u2014 22.5%",
+        "title": "CXPACKET: 22.5%",
         "description": "Parallelism coordination. Usually benign. Check MAXDOP only if dominant.",
         "recommendation": "",
         "details": {
@@ -472,7 +472,7 @@
         "id": "bot.wait.lck_m_s",
         "category": "bottlenecks",
         "severity": "info",
-        "title": "LCK_M_S \u2014 3.2%",
+        "title": "LCK_M_S: 3.2%",
         "description": "Shared lock wait. Readers blocked by writers. Consider RCSI.",
         "recommendation": "",
         "details": {
@@ -487,7 +487,7 @@
         "id": "bot.wait.lck_m_x",
         "category": "bottlenecks",
         "severity": "info",
-        "title": "LCK_M_X \u2014 8.5%",
+        "title": "LCK_M_X: 8.5%",
         "description": "Exclusive lock wait. Look at current blocking and long transactions.",
         "recommendation": "",
         "details": {
@@ -502,7 +502,7 @@
         "id": "bot.wait.pagelatch_ex",
         "category": "bottlenecks",
         "severity": "info",
-        "title": "PAGELATCH_EX \u2014 4.8%",
+        "title": "PAGELATCH_EX: 4.8%",
         "description": "In-memory page contention, typically tempdb allocation. Bump tempdb file count.",
         "recommendation": "",
         "details": {
@@ -517,7 +517,7 @@
         "id": "bot.wait.resource_semaphore",
         "category": "bottlenecks",
         "severity": "info",
-        "title": "RESOURCE_SEMAPHORE \u2014 1.2%",
+        "title": "RESOURCE_SEMAPHORE: 1.2%",
         "description": "Memory grant queue. Critical when sustained.",
         "recommendation": "",
         "details": {
@@ -532,7 +532,7 @@
         "id": "bot.wait.sos_scheduler_yield",
         "category": "bottlenecks",
         "severity": "info",
-        "title": "SOS_SCHEDULER_YIELD \u2014 6.1%",
+        "title": "SOS_SCHEDULER_YIELD: 6.1%",
         "description": "CPU pressure. Top CPU consumers; parallelism.",
         "recommendation": "",
         "details": {
@@ -547,7 +547,7 @@
         "id": "bot.wait.writelog",
         "category": "bottlenecks",
         "severity": "info",
-        "title": "WRITELOG \u2014 12.3%",
+        "title": "WRITELOG: 12.3%",
         "description": "Log writer flush wait. Log IO latency. Faster log storage or smaller txns.",
         "recommendation": "",
         "details": {
@@ -1022,7 +1022,7 @@
       "id": "bot.wait.pageiolatch_sh",
       "category": "bottlenecks",
       "severity": "warning",
-      "title": "PAGEIOLATCH_SH \u2014 32.1%",
+      "title": "PAGEIOLATCH_SH: 32.1%",
       "description": "Data page read from disk. IO pressure. Check storage latency and buffer pool.",
       "recommendation": "",
       "details": {
@@ -1292,7 +1292,7 @@
       "id": "bot.wait.async_network_io",
       "category": "bottlenecks",
       "severity": "info",
-      "title": "ASYNC_NETWORK_IO \u2014 7.2%",
+      "title": "ASYNC_NETWORK_IO: 7.2%",
       "description": "Client slow to consume results. Almost always client-side.",
       "recommendation": "",
       "details": {
@@ -1307,7 +1307,7 @@
       "id": "bot.wait.cxconsumer",
       "category": "bottlenecks",
       "severity": "info",
-      "title": "CXCONSUMER \u2014 2.1%",
+      "title": "CXCONSUMER: 2.1%",
       "description": "Parallelism consumer wait. Not actionable on its own.",
       "recommendation": "",
       "details": {
@@ -1322,7 +1322,7 @@
       "id": "bot.wait.cxpacket",
       "category": "bottlenecks",
       "severity": "info",
-      "title": "CXPACKET \u2014 22.5%",
+      "title": "CXPACKET: 22.5%",
       "description": "Parallelism coordination. Usually benign. Check MAXDOP only if dominant.",
       "recommendation": "",
       "details": {
@@ -1337,7 +1337,7 @@
       "id": "bot.wait.lck_m_s",
       "category": "bottlenecks",
       "severity": "info",
-      "title": "LCK_M_S \u2014 3.2%",
+      "title": "LCK_M_S: 3.2%",
       "description": "Shared lock wait. Readers blocked by writers. Consider RCSI.",
       "recommendation": "",
       "details": {
@@ -1352,7 +1352,7 @@
       "id": "bot.wait.lck_m_x",
       "category": "bottlenecks",
       "severity": "info",
-      "title": "LCK_M_X \u2014 8.5%",
+      "title": "LCK_M_X: 8.5%",
       "description": "Exclusive lock wait. Look at current blocking and long transactions.",
       "recommendation": "",
       "details": {
@@ -1367,7 +1367,7 @@
       "id": "bot.wait.pagelatch_ex",
       "category": "bottlenecks",
       "severity": "info",
-      "title": "PAGELATCH_EX \u2014 4.8%",
+      "title": "PAGELATCH_EX: 4.8%",
       "description": "In-memory page contention, typically tempdb allocation. Bump tempdb file count.",
       "recommendation": "",
       "details": {
@@ -1382,7 +1382,7 @@
       "id": "bot.wait.resource_semaphore",
       "category": "bottlenecks",
       "severity": "info",
-      "title": "RESOURCE_SEMAPHORE \u2014 1.2%",
+      "title": "RESOURCE_SEMAPHORE: 1.2%",
       "description": "Memory grant queue. Critical when sustained.",
       "recommendation": "",
       "details": {
@@ -1397,7 +1397,7 @@
       "id": "bot.wait.sos_scheduler_yield",
       "category": "bottlenecks",
       "severity": "info",
-      "title": "SOS_SCHEDULER_YIELD \u2014 6.1%",
+      "title": "SOS_SCHEDULER_YIELD: 6.1%",
       "description": "CPU pressure. Top CPU consumers; parallelism.",
       "recommendation": "",
       "details": {
@@ -1412,7 +1412,7 @@
       "id": "bot.wait.writelog",
       "category": "bottlenecks",
       "severity": "info",
-      "title": "WRITELOG \u2014 12.3%",
+      "title": "WRITELOG: 12.3%",
       "description": "Log writer flush wait. Log IO latency. Faster log storage or smaller txns.",
       "recommendation": "",
       "details": {

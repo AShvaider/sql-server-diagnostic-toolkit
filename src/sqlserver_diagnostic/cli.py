@@ -103,7 +103,7 @@ def main(server, database, user, password, driver, trust_cert, output, categorie
         click.echo(f"  {kind}: {paths[kind]}")
 
     if errors:
-        click.echo(f"{len(errors)} probe(s) failed — see the 'Probes that failed' section.", err=True)
+        click.echo(f"{len(errors)} probe(s) failed; see the 'Probes that failed' section.", err=True)
 
 
 if __name__ == "__main__":

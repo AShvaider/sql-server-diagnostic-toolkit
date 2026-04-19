@@ -1,5 +1,8 @@
 -- Per-DB data/log size + the single biggest table.
--- Iterates user DBs. Skips system DBs.
+-- Iterates user DBs. Skips system DBs. NOCOUNT so the dynamic INSERTs don't
+-- confuse the driver about how many result sets are coming back.
+SET NOCOUNT ON;
+
 DECLARE @sql NVARCHAR(MAX) = N'';
 
 CREATE TABLE #out (

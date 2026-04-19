@@ -12,7 +12,7 @@ DECLARE @cpu int = (SELECT cpu_count FROM sys.dm_os_sys_info);
 ),
 contention AS (
     SELECT
-        ISNULL(SUM(wait_time_ms) / 1000.0, 0) AS pagelatch_contention_s,
+        ISNULL(SUM(wait_duration_ms) / 1000.0, 0) AS pagelatch_contention_s,
         MAX(resource_description)             AS top_contention_resource
     FROM sys.dm_os_waiting_tasks
     WHERE wait_type LIKE 'PAGELATCH_%'

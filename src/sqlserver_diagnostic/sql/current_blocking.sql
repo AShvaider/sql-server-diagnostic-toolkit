@@ -2,7 +2,7 @@
 SELECT
     blocked.session_id            AS blocked_session_id,
     blocker.session_id            AS blocker_session_id,
-    blocked.wait_time             AS wait_time_ms,
+    blocked.wait_duration_ms      AS wait_time_ms,
     blocked.wait_type             AS wait_type,
     blocked.resource_description  AS resource_description,
     bs.login_name                 AS blocker_login,

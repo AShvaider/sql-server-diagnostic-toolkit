@@ -1,0 +1,1742 @@
+{
+  "generated_at": "2026-04-18 21:53 UTC",
+  "tool_version": "0.1.0",
+  "server_info": {
+    "server_name": "prod-sql-01.internal,1433",
+    "database_name": "shopdb",
+    "sql_version": "SQL Server 2022 (RTM-CU10) Standard Edition",
+    "scan_duration_s": 3.8
+  },
+  "totals": {
+    "finding_count": 57,
+    "by_severity": {
+      "critical": 6,
+      "warning": 22,
+      "info": 29
+    },
+    "by_category": {
+      "capacity": 7,
+      "health": 3,
+      "performance": 34,
+      "bottlenecks": 13
+    }
+  },
+  "verdict": {
+    "headline": "Action required",
+    "summary": "6 critical issues need attention."
+  },
+  "by_severity": {
+    "critical": [
+      {
+        "id": "cap.mem.page_life_expectancy",
+        "category": "capacity",
+        "severity": "critical",
+        "title": "PLE critically low: 278s",
+        "description": "Buffer pool is churning. Add memory or reduce IO.",
+        "recommendation": "",
+        "details": {
+          "metric": "page_life_expectancy",
+          "value": 278,
+          "unit": "seconds"
+        }
+      },
+      {
+        "id": "hlt.backup.log.shopdb",
+        "category": "health",
+        "severity": "critical",
+        "title": "Log backup gap > 24h: shopdb",
+        "description": "Recovery model is FULL, last log backup 34.7 hours ago. Log will grow unbounded.",
+        "recommendation": "BACKUP LOG [shopdb] TO DISK='...' WITH COMPRESSION;",
+        "details": {
+          "hours_since_log": 34.7
+        }
+      },
+      {
+        "id": "hlt.vlf.shopdb",
+        "category": "health",
+        "severity": "critical",
+        "title": "VLF count 14,820 on shopdb",
+        "description": "Startup, log backups, and crash recovery will be slow.",
+        "recommendation": "USE shopdb; DBCC SHRINKFILE (shopdb_log, 100); ALTER DATABASE shopdb MODIFY FILE (NAME = shopdb_log, SIZE = 8192MB, FILEGROWTH = 8192MB);",
+        "details": {
+          "vlf_count": 14820,
+          "log_size_mb": 28000
+        }
+      },
+      {
+        "id": "perf.frag.IX_audit_log_created_at",
+        "category": "performance",
+        "severity": "critical",
+        "title": "Heavily fragmented: IX_audit_log_created_at on dbo.audit_log",
+        "description": "87.3% over 185,400 pages. Rebuild.",
+        "recommendation": "ALTER INDEX [IX_audit_log_created_at] ON [dbo].[audit_log] REBUILD;",
+        "details": {
+          "fragmentation_pct": 87.3,
+          "page_count": 185400,
+          "index_type": "NONCLUSTERED INDEX"
+        }
+      },
+      {
+        "id": "perf.missing_idx.customers.email",
+        "category": "performance",
+        "severity": "critical",
+        "title": "Missing index on dbo.customers (email)",
+        "description": "Improvement measure 2,540,000, avg impact 92%, 0 seeks.",
+        "recommendation": "CREATE NONCLUSTERED INDEX IX_customers_email ON dbo.customers (email) INCLUDE (first_name, last_name, created_at);",
+        "details": {
+          "improvement_measure": 2540000,
+          "avg_user_impact_pct": 92.4,
+          "user_seeks": 0,
+          "user_scans": 18400,
+          "equality_columns": "email",
+          "inequality_columns": "",
+          "included_columns": "first_name, last_name, created_at"
+        }
+      },
+      {
+        "id": "perf.query.3F9A8B1C",
+        "category": "performance",
+        "severity": "critical",
+        "title": "7,200 ms avg \u00b7 18,400 runs",
+        "description": "SELECT o.id, o.customer_id, SUM(oi.quantity * oi.unit_price) AS total FROM dbo.orders o JOIN dbo.order_items oi ON oi.order_id = o.id WHE...",
+        "recommendation": "SELECT o.id, o.customer_id, SUM(oi.quantity * oi.unit_price) AS total FROM dbo.orders o JOIN dbo.order_items oi ON oi.order_id = o.id WHERE o.created_at > DATEADD(day, -30, GETDATE()) GROUP BY o.id, o.customer_id",
+        "details": {
+          "query_hash": "0x3F9A8B1C2D4E5F60",
+          "execution_count": 18400,
+          "avg_worker_time_ms": 7200,
+          "total_worker_time_ms": 132480000,
+          "avg_logical_reads": 1240000,
+          "last_execution_time": "2026-04-17 08:12:33"
+        }
+      }
+    ],
+    "warning": [
+      {
+        "id": "bot.block.104_227",
+        "category": "bottlenecks",
+        "severity": "warning",
+        "title": "Session 104 blocking 227 (12,800 ms)",
+        "description": "LCK_M_S. Blocker: etl_pipeline. Blocked: app_service.",
+        "recommendation": "",
+        "details": {
+          "resource": "objectlock OBJECT: 5:1093578934",
+          "blocker_query": "BEGIN TRAN; SELECT TOP (10000) * FROM dbo.events WITH (TABLOCKX); ...",
+          "blocked_query": "INSERT INTO dbo.events (user_id, type, created_at) VALUES (?, ?, ?)"
+        }
+      },
+      {
+        "id": "bot.block.87_192",
+        "category": "bottlenecks",
+        "severity": "warning",
+        "title": "Session 87 blocking 192 (45,300 ms)",
+        "description": "LCK_M_X. Blocker: app_service. Blocked: reporting_user.",
+        "recommendation": "",
+        "details": {
+          "resource": "keylock hobtid=72057594045923328",
+          "blocker_query": "UPDATE dbo.orders SET status = 'shipped' WHERE id = 1234567",
+          "blocked_query": "SELECT * FROM dbo.orders WHERE customer_id = 42100"
+        }
+      },
+      {
+        "id": "bot.tempdb",
+        "category": "bottlenecks",
+        "severity": "warning",
+        "title": "tempdb: 2 data file(s), recommended 8",
+        "description": "Imbalance 1,450 MB. PAGELATCH contention 820s on 2:1:3 (SGAM page).",
+        "recommendation": "ALTER DATABASE tempdb ADD FILE ... ; -- grow to 8 equal files",
+        "details": {
+          "file_count": 2,
+          "recommended_file_count": 8,
+          "imbalance_mb": 1450,
+          "top_contention_resource": "2:1:3 (SGAM page)"
+        }
+      },
+      {
+        "id": "bot.wait.pageiolatch_sh",
+        "category": "bottlenecks",
+        "severity": "warning",
+        "title": "PAGEIOLATCH_SH \u2014 32.1%",
+        "description": "Data page read from disk. IO pressure. Check storage latency and buffer pool.",
+        "recommendation": "",
+        "details": {
+          "rank": 1,
+          "pct_total_wait": 32.1,
+          "wait_time_s": 185400,
+          "signal_wait_time_s": 5200,
+          "waiting_tasks_count": 14800000
+        }
+      },
+      {
+        "id": "cap.mem.buffer_cache_hit_ratio",
+        "category": "capacity",
+        "severity": "warning",
+        "title": "Buffer cache hit ratio 93.8%",
+        "description": "Healthy OLTP sits at 95%+. Correlate with PLE and IO waits.",
+        "recommendation": "",
+        "details": {
+          "metric": "buffer_cache_hit_ratio",
+          "value": 93.8,
+          "unit": "percent"
+        }
+      },
+      {
+        "id": "perf.frag.IX_events_user_time",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Fragmented: IX_events_user_time (25%)",
+        "description": "24.6% on dbo.events (92,100 pages). Reorganize.",
+        "recommendation": "ALTER INDEX [IX_events_user_time] ON [dbo].[events] REORGANIZE;",
+        "details": {
+          "fragmentation_pct": 24.6,
+          "page_count": 92100
+        }
+      },
+      {
+        "id": "perf.frag.IX_order_items_product",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Fragmented: IX_order_items_product (22%)",
+        "description": "22.1% on dbo.order_items (64,500 pages). Reorganize.",
+        "recommendation": "ALTER INDEX [IX_order_items_product] ON [dbo].[order_items] REORGANIZE;",
+        "details": {
+          "fragmentation_pct": 22.1,
+          "page_count": 64500
+        }
+      },
+      {
+        "id": "perf.frag.PK_orders",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Fragmented: PK_orders (12%)",
+        "description": "12.4% on dbo.orders (128,400 pages). Reorganize.",
+        "recommendation": "ALTER INDEX [PK_orders] ON [dbo].[orders] REORGANIZE;",
+        "details": {
+          "fragmentation_pct": 12.4,
+          "page_count": 128400
+        }
+      },
+      {
+        "id": "perf.frag.PK_products",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Fragmented: PK_products (28%)",
+        "description": "28.4% on dbo.products (18,200 pages). Reorganize.",
+        "recommendation": "ALTER INDEX [PK_products] ON [dbo].[products] REORGANIZE;",
+        "details": {
+          "fragmentation_pct": 28.4,
+          "page_count": 18200
+        }
+      },
+      {
+        "id": "perf.frag.PK_sessions",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Fragmented: PK_sessions (19%)",
+        "description": "18.7% on dbo.sessions (24,800 pages). Reorganize.",
+        "recommendation": "ALTER INDEX [PK_sessions] ON [dbo].[sessions] REORGANIZE;",
+        "details": {
+          "fragmentation_pct": 18.7,
+          "page_count": 24800
+        }
+      },
+      {
+        "id": "perf.missing_idx.order_items.order_id",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Missing index on dbo.order_items (order_id)",
+        "description": "Improvement measure 215,000, avg impact 58%, 14,800 seeks.",
+        "recommendation": "CREATE NONCLUSTERED INDEX IX_order_items_order ON dbo.order_items (order_id) INCLUDE (product_id, quantity, unit_price);",
+        "details": {
+          "improvement_measure": 215000,
+          "avg_user_impact_pct": 58.3,
+          "user_seeks": 14800,
+          "user_scans": 0,
+          "equality_columns": "order_id",
+          "inequality_columns": "",
+          "included_columns": "product_id, quantity, unit_price"
+        }
+      },
+      {
+        "id": "perf.missing_idx.orders.customer_id",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Missing index on dbo.orders (customer_id)",
+        "description": "Improvement measure 480,000, avg impact 72%, 8,200 seeks.",
+        "recommendation": "CREATE NONCLUSTERED INDEX IX_orders_customer_created ON dbo.orders (customer_id, created_at) INCLUDE (status, total);",
+        "details": {
+          "improvement_measure": 480000,
+          "avg_user_impact_pct": 71.8,
+          "user_seeks": 8200,
+          "user_scans": 120,
+          "equality_columns": "customer_id",
+          "inequality_columns": "created_at",
+          "included_columns": "status, total"
+        }
+      },
+      {
+        "id": "perf.plan.implicitconversion.A1B2C3",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Plan: ImplicitConversion",
+        "description": "Converting varchar(255) to nvarchar(4000). Index IX_customers_email not used.",
+        "recommendation": "",
+        "details": {
+          "query_text": "SELECT * FROM dbo.customers WHERE email = @email",
+          "query_hash": "0xA1B2C3D4E5F60718",
+          "column_ref": "dbo.customers.email"
+        }
+      },
+      {
+        "id": "perf.plan.missingstatistics.B7C8D9",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Plan: MissingStatistics",
+        "description": "Statistics missing on (user_id, type). Cardinality estimate off by 40x.",
+        "recommendation": "",
+        "details": {
+          "query_text": "SELECT COUNT(*) FROM dbo.events WHERE user_id = ? AND type = ?",
+          "query_hash": "0xB7C8D9E0F1A20304",
+          "column_ref": "dbo.events.type"
+        }
+      },
+      {
+        "id": "perf.plan.spilltotempdb.3F9A8B",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Plan: SpillToTempDB",
+        "description": "Hash match spilled 450 MB to tempdb during aggregation.",
+        "recommendation": "",
+        "details": {
+          "query_text": "... GROUP BY o.id, o.customer_id",
+          "query_hash": "0x3F9A8B1C2D4E5F60",
+          "column_ref": null
+        }
+      },
+      {
+        "id": "perf.plan.tablescan.3F9A8B",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Plan: TableScan",
+        "description": "Full table scan over 42M rows. No useful index on actor_id.",
+        "recommendation": "",
+        "details": {
+          "query_text": "SELECT * FROM dbo.audit_log WHERE actor_id = ? ORDER BY created_at DESC",
+          "query_hash": "0x3F9A8B1C2D4E5F60",
+          "column_ref": "dbo.audit_log.actor_id"
+        }
+      },
+      {
+        "id": "perf.query.7B3C2A1E",
+        "category": "performance",
+        "severity": "warning",
+        "title": "1,500 ms avg \u00b7 8,900 runs",
+        "description": "SELECT c.id, c.email, COUNT(DISTINCT o.id) AS orders FROM dbo.customers c LEFT JOIN dbo.orders o ON o.customer_id = c.id GROUP BY c.id, c...",
+        "recommendation": "SELECT c.id, c.email, COUNT(DISTINCT o.id) AS orders FROM dbo.customers c LEFT JOIN dbo.orders o ON o.customer_id = c.id GROUP BY c.id, c.email HAVING COUNT(DISTINCT o.id) > 5",
+        "details": {
+          "query_hash": "0x7B3C2A1E4F5D6082",
+          "execution_count": 8900,
+          "avg_worker_time_ms": 1500,
+          "total_worker_time_ms": 13350000,
+          "avg_logical_reads": 84500,
+          "last_execution_time": "2026-04-17 08:10:41"
+        }
+      },
+      {
+        "id": "perf.query.A1B2C3D4",
+        "category": "performance",
+        "severity": "warning",
+        "title": "2,100 ms avg \u00b7 42,800 runs",
+        "description": "SELECT TOP 50 p.* FROM dbo.products p WHERE p.name LIKE @search OR p.description LIKE @search ORDER BY p.updated_at DESC",
+        "recommendation": "SELECT TOP 50 p.* FROM dbo.products p WHERE p.name LIKE @search OR p.description LIKE @search ORDER BY p.updated_at DESC",
+        "details": {
+          "query_hash": "0xA1B2C3D4E5F60718",
+          "execution_count": 42800,
+          "avg_worker_time_ms": 2100,
+          "total_worker_time_ms": 89880000,
+          "avg_logical_reads": 312000,
+          "last_execution_time": "2026-04-17 08:14:02"
+        }
+      },
+      {
+        "id": "perf.unused_idx.IX_audit_log_source",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Unused index: IX_audit_log_source",
+        "description": "dbo.audit_log: 0 reads, 8,400,200 writes, 312 MB.",
+        "recommendation": "DROP INDEX IX_audit_log_source ON dbo.audit_log;",
+        "details": {
+          "table": "dbo.audit_log",
+          "size_mb": 312,
+          "user_updates": 8400200,
+          "user_seeks": 0,
+          "user_scans": 2,
+          "user_lookups": 0
+        }
+      },
+      {
+        "id": "perf.unused_idx.IX_customers_phone_alt",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Unused index: IX_customers_phone_alt",
+        "description": "dbo.customers: 0 reads, 1,820,500 writes, 94 MB.",
+        "recommendation": "DROP INDEX IX_customers_phone_alt ON dbo.customers;",
+        "details": {
+          "table": "dbo.customers",
+          "size_mb": 94,
+          "user_updates": 1820500,
+          "user_seeks": 0,
+          "user_scans": 0,
+          "user_lookups": 0
+        }
+      },
+      {
+        "id": "perf.unused_idx.IX_orders_referral_code",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Unused index: IX_orders_referral_code",
+        "description": "dbo.orders: 0 reads, 4,218,400 writes, 182 MB.",
+        "recommendation": "DROP INDEX IX_orders_referral_code ON dbo.orders;",
+        "details": {
+          "table": "dbo.orders",
+          "size_mb": 182,
+          "user_updates": 4218400,
+          "user_seeks": 0,
+          "user_scans": 0,
+          "user_lookups": 0
+        }
+      },
+      {
+        "id": "perf.unused_idx.IX_products_sku_legacy",
+        "category": "performance",
+        "severity": "warning",
+        "title": "Unused index: IX_products_sku_legacy",
+        "description": "dbo.products: 0 reads, 215,400 writes, 28 MB.",
+        "recommendation": "DROP INDEX IX_products_sku_legacy ON dbo.products;",
+        "details": {
+          "table": "dbo.products",
+          "size_mb": 28,
+          "user_updates": 215400,
+          "user_seeks": 0,
+          "user_scans": 0,
+          "user_lookups": 0
+        }
+      }
+    ],
+    "info": [
+      {
+        "id": "bot.wait.async_network_io",
+        "category": "bottlenecks",
+        "severity": "info",
+        "title": "ASYNC_NETWORK_IO \u2014 7.2%",
+        "description": "Client slow to consume results. Almost always client-side.",
+        "recommendation": "",
+        "details": {
+          "rank": 5,
+          "pct_total_wait": 7.2,
+          "wait_time_s": 41600,
+          "signal_wait_time_s": 480,
+          "waiting_tasks_count": 6100000
+        }
+      },
+      {
+        "id": "bot.wait.cxconsumer",
+        "category": "bottlenecks",
+        "severity": "info",
+        "title": "CXCONSUMER \u2014 2.1%",
+        "description": "Parallelism consumer wait. Not actionable on its own.",
+        "recommendation": "",
+        "details": {
+          "rank": 9,
+          "pct_total_wait": 2.1,
+          "wait_time_s": 12100,
+          "signal_wait_time_s": 140,
+          "waiting_tasks_count": 1800000
+        }
+      },
+      {
+        "id": "bot.wait.cxpacket",
+        "category": "bottlenecks",
+        "severity": "info",
+        "title": "CXPACKET \u2014 22.5%",
+        "description": "Parallelism coordination. Usually benign. Check MAXDOP only if dominant.",
+        "recommendation": "",
+        "details": {
+          "rank": 2,
+          "pct_total_wait": 22.5,
+          "wait_time_s": 129800,
+          "signal_wait_time_s": 3800,
+          "waiting_tasks_count": 8200000
+        }
+      },
+      {
+        "id": "bot.wait.lck_m_s",
+        "category": "bottlenecks",
+        "severity": "info",
+        "title": "LCK_M_S \u2014 3.2%",
+        "description": "Shared lock wait. Readers blocked by writers. Consider RCSI.",
+        "recommendation": "",
+        "details": {
+          "rank": 8,
+          "pct_total_wait": 3.2,
+          "wait_time_s": 18500,
+          "signal_wait_time_s": 210,
+          "waiting_tasks_count": 84100
+        }
+      },
+      {
+        "id": "bot.wait.lck_m_x",
+        "category": "bottlenecks",
+        "severity": "info",
+        "title": "LCK_M_X \u2014 8.5%",
+        "description": "Exclusive lock wait. Look at current blocking and long transactions.",
+        "recommendation": "",
+        "details": {
+          "rank": 4,
+          "pct_total_wait": 8.5,
+          "wait_time_s": 49100,
+          "signal_wait_time_s": 820,
+          "waiting_tasks_count": 182400
+        }
+      },
+      {
+        "id": "bot.wait.pagelatch_ex",
+        "category": "bottlenecks",
+        "severity": "info",
+        "title": "PAGELATCH_EX \u2014 4.8%",
+        "description": "In-memory page contention, typically tempdb allocation. Bump tempdb file count.",
+        "recommendation": "",
+        "details": {
+          "rank": 7,
+          "pct_total_wait": 4.8,
+          "wait_time_s": 27700,
+          "signal_wait_time_s": 340,
+          "waiting_tasks_count": 3200000
+        }
+      },
+      {
+        "id": "bot.wait.resource_semaphore",
+        "category": "bottlenecks",
+        "severity": "info",
+        "title": "RESOURCE_SEMAPHORE \u2014 1.2%",
+        "description": "Memory grant queue. Critical when sustained.",
+        "recommendation": "",
+        "details": {
+          "rank": 10,
+          "pct_total_wait": 1.2,
+          "wait_time_s": 6900,
+          "signal_wait_time_s": 85,
+          "waiting_tasks_count": 4200
+        }
+      },
+      {
+        "id": "bot.wait.sos_scheduler_yield",
+        "category": "bottlenecks",
+        "severity": "info",
+        "title": "SOS_SCHEDULER_YIELD \u2014 6.1%",
+        "description": "CPU pressure. Top CPU consumers; parallelism.",
+        "recommendation": "",
+        "details": {
+          "rank": 6,
+          "pct_total_wait": 6.1,
+          "wait_time_s": 35200,
+          "signal_wait_time_s": 420,
+          "waiting_tasks_count": 28400000
+        }
+      },
+      {
+        "id": "bot.wait.writelog",
+        "category": "bottlenecks",
+        "severity": "info",
+        "title": "WRITELOG \u2014 12.3%",
+        "description": "Log writer flush wait. Log IO latency. Faster log storage or smaller txns.",
+        "recommendation": "",
+        "details": {
+          "rank": 3,
+          "pct_total_wait": 12.3,
+          "wait_time_s": 71000,
+          "signal_wait_time_s": 2100,
+          "waiting_tasks_count": 22400000
+        }
+      },
+      {
+        "id": "cap.sess.app_service.web-prod-02",
+        "category": "capacity",
+        "severity": "info",
+        "title": "184 \u00d7 app_service from web-prod-02",
+        "description": "Node.js Driver \u00b7 status running.",
+        "recommendation": "",
+        "details": {
+          "login_name": "app_service",
+          "database_name": "shopdb",
+          "host_name": "web-prod-02",
+          "program_name": "Node.js Driver",
+          "status": "running",
+          "session_count": 184
+        }
+      },
+      {
+        "id": "cap.sess.app_service.web-prod-03",
+        "category": "capacity",
+        "severity": "info",
+        "title": "42 \u00d7 app_service from web-prod-03",
+        "description": "Node.js Driver \u00b7 status sleeping.",
+        "recommendation": "",
+        "details": {
+          "login_name": "app_service",
+          "database_name": "shopdb",
+          "host_name": "web-prod-03",
+          "program_name": "Node.js Driver",
+          "status": "sleeping",
+          "session_count": 42
+        }
+      },
+      {
+        "id": "cap.sess.dba_readonly.ops-laptop",
+        "category": "capacity",
+        "severity": "info",
+        "title": "3 \u00d7 dba_readonly from ops-laptop",
+        "description": "SSMS \u00b7 status sleeping.",
+        "recommendation": "",
+        "details": {
+          "login_name": "dba_readonly",
+          "database_name": "shopdb",
+          "host_name": "ops-laptop",
+          "program_name": "SSMS",
+          "status": "sleeping",
+          "session_count": 3
+        }
+      },
+      {
+        "id": "cap.sess.etl_pipeline.etl-01",
+        "category": "capacity",
+        "severity": "info",
+        "title": "8 \u00d7 etl_pipeline from etl-01",
+        "description": ".Net SqlClient Data Provider \u00b7 status running.",
+        "recommendation": "",
+        "details": {
+          "login_name": "etl_pipeline",
+          "database_name": "shopdb",
+          "host_name": "etl-01",
+          "program_name": ".Net SqlClient Data Provider",
+          "status": "running",
+          "session_count": 8
+        }
+      },
+      {
+        "id": "cap.sess.reporting_user.bi-01",
+        "category": "capacity",
+        "severity": "info",
+        "title": "12 \u00d7 reporting_user from bi-01",
+        "description": "Power BI \u00b7 status running.",
+        "recommendation": "",
+        "details": {
+          "login_name": "reporting_user",
+          "database_name": "shopdb",
+          "host_name": "bi-01",
+          "program_name": "Power BI",
+          "status": "running",
+          "session_count": 12
+        }
+      },
+      {
+        "id": "hlt.size.shopdb",
+        "category": "health",
+        "severity": "info",
+        "title": "shopdb: 102,400 MB data, 12,100 MB log",
+        "description": "Largest table: dbo.audit_log (42,100 MB).",
+        "recommendation": "",
+        "details": {
+          "data_size_mb": 145000,
+          "data_used_mb": 102400,
+          "log_size_mb": 28000,
+          "log_used_mb": 12100,
+          "largest_table": "dbo.audit_log",
+          "largest_table_mb": 42100
+        }
+      },
+      {
+        "id": "perf.frag.summary",
+        "category": "performance",
+        "severity": "info",
+        "title": "9 indexes below 10% fragmentation",
+        "description": "No maintenance needed. Sampled in SAMPLED mode.",
+        "recommendation": "",
+        "details": {
+          "indexes": "PK_customers, IX_customers_email, PK_payments, PK_reviews, PK_carts, PK_cart_items, PK_shipments, PK_addresses, PK_notifications"
+        }
+      },
+      {
+        "id": "perf.missing_idx.audit_log.created_at",
+        "category": "performance",
+        "severity": "info",
+        "title": "Missing index on dbo.audit_log (created_at)",
+        "description": "Improvement measure 38,000, avg impact 28%, 180 seeks.",
+        "recommendation": "CREATE NONCLUSTERED INDEX IX_audit_log_created ON dbo.audit_log (created_at) INCLUDE (actor_id, action, target_type);",
+        "details": {
+          "improvement_measure": 38000,
+          "avg_user_impact_pct": 28.5,
+          "user_seeks": 180,
+          "user_scans": 640,
+          "equality_columns": "",
+          "inequality_columns": "created_at",
+          "included_columns": "actor_id, action, target_type"
+        }
+      },
+      {
+        "id": "perf.missing_idx.events.user_id",
+        "category": "performance",
+        "severity": "info",
+        "title": "Missing index on dbo.events (user_id)",
+        "description": "Improvement measure 42,000, avg impact 64%, 4,200 seeks.",
+        "recommendation": "CREATE NONCLUSTERED INDEX IX_events_user_created ON dbo.events (user_id, created_at) INCLUDE (type);",
+        "details": {
+          "improvement_measure": 42000,
+          "avg_user_impact_pct": 64.1,
+          "user_seeks": 4200,
+          "user_scans": 42,
+          "equality_columns": "user_id",
+          "inequality_columns": "created_at",
+          "included_columns": "type"
+        }
+      },
+      {
+        "id": "perf.missing_idx.products.category_id",
+        "category": "performance",
+        "severity": "info",
+        "title": "Missing index on dbo.products (category_id)",
+        "description": "Improvement measure 7,800, avg impact 18%, 1,200 seeks.",
+        "recommendation": "CREATE NONCLUSTERED INDEX IX_products_category ON dbo.products (category_id) INCLUDE (name, price);",
+        "details": {
+          "improvement_measure": 7800,
+          "avg_user_impact_pct": 18.2,
+          "user_seeks": 1200,
+          "user_scans": 0,
+          "equality_columns": "category_id",
+          "inequality_columns": "",
+          "included_columns": "name, price"
+        }
+      },
+      {
+        "id": "perf.plan.columnswithnostatistics.55AA66",
+        "category": "performance",
+        "severity": "info",
+        "title": "Plan: ColumnsWithNoStatistics",
+        "description": "Column dbo.reviews.is_moderated has no statistics.",
+        "recommendation": "",
+        "details": {
+          "query_text": "SELECT * FROM dbo.reviews WHERE is_moderated = 0",
+          "query_hash": "0x55AA66BB77CC88DD",
+          "column_ref": "dbo.reviews.is_moderated"
+        }
+      },
+      {
+        "id": "perf.plan.columnswithnostatistics.66AA77",
+        "category": "performance",
+        "severity": "info",
+        "title": "Plan: ColumnsWithNoStatistics",
+        "description": "Column dbo.shipments.carrier has no statistics.",
+        "recommendation": "",
+        "details": {
+          "query_text": "SELECT * FROM dbo.shipments WHERE carrier = ?",
+          "query_hash": "0x66AA77BB88CC99EE",
+          "column_ref": "dbo.shipments.carrier"
+        }
+      },
+      {
+        "id": "perf.plan.columnswithnostatistics.77AA88",
+        "category": "performance",
+        "severity": "info",
+        "title": "Plan: ColumnsWithNoStatistics",
+        "description": "Column dbo.notifications.channel has no statistics.",
+        "recommendation": "",
+        "details": {
+          "query_text": "SELECT * FROM dbo.notifications WHERE channel = ?",
+          "query_hash": "0x77AA88BB99CCAAFF",
+          "column_ref": "dbo.notifications.channel"
+        }
+      },
+      {
+        "id": "perf.query.11223344",
+        "category": "performance",
+        "severity": "info",
+        "title": "10 ms avg \u00b7 12,400 runs",
+        "description": "SELECT id, name, price FROM dbo.products WHERE id IN (?, ?, ?, ?, ?)",
+        "recommendation": "",
+        "details": {
+          "query_hash": "0x1122334455667788",
+          "execution_count": 12400,
+          "avg_worker_time_ms": 10,
+          "total_worker_time_ms": 124000,
+          "avg_logical_reads": 18,
+          "last_execution_time": "2026-04-17 08:14:30"
+        }
+      },
+      {
+        "id": "perf.query.9988AABB",
+        "category": "performance",
+        "severity": "info",
+        "title": "15 ms avg \u00b7 38,900 runs",
+        "description": "SELECT token, user_id FROM dbo.sessions WHERE token = @t AND expires_at > SYSUTCDATETIME()",
+        "recommendation": "",
+        "details": {
+          "query_hash": "0x9988AABB77665544",
+          "execution_count": 38900,
+          "avg_worker_time_ms": 15,
+          "total_worker_time_ms": 583500,
+          "avg_logical_reads": 29,
+          "last_execution_time": "2026-04-17 08:14:55"
+        }
+      },
+      {
+        "id": "perf.query.AA55BB66",
+        "category": "performance",
+        "severity": "info",
+        "title": "20 ms avg \u00b7 54,200 runs",
+        "description": "INSERT INTO dbo.events (user_id, type, created_at) VALUES (?, ?, ?)",
+        "recommendation": "",
+        "details": {
+          "query_hash": "0xAA55BB66CC77DD80",
+          "execution_count": 54200,
+          "avg_worker_time_ms": 20,
+          "total_worker_time_ms": 1084000,
+          "avg_logical_reads": 42,
+          "last_execution_time": "2026-04-17 08:14:57"
+        }
+      },
+      {
+        "id": "perf.query.ABCDEF01",
+        "category": "performance",
+        "severity": "info",
+        "title": "8 ms avg \u00b7 6,200 runs",
+        "description": "SELECT * FROM dbo.carts WHERE customer_id = @cid AND status = 'open'",
+        "recommendation": "",
+        "details": {
+          "query_hash": "0xABCDEF0102030405",
+          "execution_count": 6200,
+          "avg_worker_time_ms": 8,
+          "total_worker_time_ms": 49600,
+          "avg_logical_reads": 12,
+          "last_execution_time": "2026-04-17 08:13:22"
+        }
+      },
+      {
+        "id": "perf.query.CC11AA22",
+        "category": "performance",
+        "severity": "info",
+        "title": "90 ms avg \u00b7 215,000 runs",
+        "description": "SELECT * FROM dbo.customers WHERE id = @id",
+        "recommendation": "",
+        "details": {
+          "query_hash": "0xCC11AA22BB3344F0",
+          "execution_count": 215000,
+          "avg_worker_time_ms": 90,
+          "total_worker_time_ms": 19350000,
+          "avg_logical_reads": 340,
+          "last_execution_time": "2026-04-17 08:14:59"
+        }
+      },
+      {
+        "id": "perf.query.DEAD0001",
+        "category": "performance",
+        "severity": "info",
+        "title": "40 ms avg \u00b7 184,000 runs",
+        "description": "SELECT id, total, status FROM dbo.orders WHERE customer_id = @cid",
+        "recommendation": "",
+        "details": {
+          "query_hash": "0xDEAD0001BEEF0002",
+          "execution_count": 184000,
+          "avg_worker_time_ms": 40,
+          "total_worker_time_ms": 7360000,
+          "avg_logical_reads": 120,
+          "last_execution_time": "2026-04-17 08:14:58"
+        }
+      },
+      {
+        "id": "perf.query.FEED0003",
+        "category": "performance",
+        "severity": "info",
+        "title": "35 ms avg \u00b7 97,500 runs",
+        "description": "UPDATE dbo.sessions SET last_seen = SYSUTCDATETIME() WHERE token = @t",
+        "recommendation": "",
+        "details": {
+          "query_hash": "0xFEED0003CAFE0004",
+          "execution_count": 97500,
+          "avg_worker_time_ms": 35,
+          "total_worker_time_ms": 3412500,
+          "avg_logical_reads": 88,
+          "last_execution_time": "2026-04-17 08:14:59"
+        }
+      }
+    ]
+  },
+  "category_breakdown": {
+    "performance": {
+      "critical": 3,
+      "warning": 17,
+      "info": 14,
+      "total": 34
+    },
+    "bottlenecks": {
+      "critical": 0,
+      "warning": 4,
+      "info": 9,
+      "total": 13
+    },
+    "health": {
+      "critical": 2,
+      "warning": 0,
+      "info": 1,
+      "total": 3
+    },
+    "capacity": {
+      "critical": 1,
+      "warning": 1,
+      "info": 5,
+      "total": 7
+    }
+  },
+  "findings": [
+    {
+      "id": "cap.mem.page_life_expectancy",
+      "category": "capacity",
+      "severity": "critical",
+      "title": "PLE critically low: 278s",
+      "description": "Buffer pool is churning. Add memory or reduce IO.",
+      "recommendation": "",
+      "details": {
+        "metric": "page_life_expectancy",
+        "value": 278,
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "hlt.backup.log.shopdb",
+      "category": "health",
+      "severity": "critical",
+      "title": "Log backup gap > 24h: shopdb",
+      "description": "Recovery model is FULL, last log backup 34.7 hours ago. Log will grow unbounded.",
+      "recommendation": "BACKUP LOG [shopdb] TO DISK='...' WITH COMPRESSION;",
+      "details": {
+        "hours_since_log": 34.7
+      }
+    },
+    {
+      "id": "hlt.vlf.shopdb",
+      "category": "health",
+      "severity": "critical",
+      "title": "VLF count 14,820 on shopdb",
+      "description": "Startup, log backups, and crash recovery will be slow.",
+      "recommendation": "USE shopdb; DBCC SHRINKFILE (shopdb_log, 100); ALTER DATABASE shopdb MODIFY FILE (NAME = shopdb_log, SIZE = 8192MB, FILEGROWTH = 8192MB);",
+      "details": {
+        "vlf_count": 14820,
+        "log_size_mb": 28000
+      }
+    },
+    {
+      "id": "perf.frag.IX_audit_log_created_at",
+      "category": "performance",
+      "severity": "critical",
+      "title": "Heavily fragmented: IX_audit_log_created_at on dbo.audit_log",
+      "description": "87.3% over 185,400 pages. Rebuild.",
+      "recommendation": "ALTER INDEX [IX_audit_log_created_at] ON [dbo].[audit_log] REBUILD;",
+      "details": {
+        "fragmentation_pct": 87.3,
+        "page_count": 185400,
+        "index_type": "NONCLUSTERED INDEX"
+      }
+    },
+    {
+      "id": "perf.missing_idx.customers.email",
+      "category": "performance",
+      "severity": "critical",
+      "title": "Missing index on dbo.customers (email)",
+      "description": "Improvement measure 2,540,000, avg impact 92%, 0 seeks.",
+      "recommendation": "CREATE NONCLUSTERED INDEX IX_customers_email ON dbo.customers (email) INCLUDE (first_name, last_name, created_at);",
+      "details": {
+        "improvement_measure": 2540000,
+        "avg_user_impact_pct": 92.4,
+        "user_seeks": 0,
+        "user_scans": 18400,
+        "equality_columns": "email",
+        "inequality_columns": "",
+        "included_columns": "first_name, last_name, created_at"
+      }
+    },
+    {
+      "id": "perf.query.3F9A8B1C",
+      "category": "performance",
+      "severity": "critical",
+      "title": "7,200 ms avg \u00b7 18,400 runs",
+      "description": "SELECT o.id, o.customer_id, SUM(oi.quantity * oi.unit_price) AS total FROM dbo.orders o JOIN dbo.order_items oi ON oi.order_id = o.id WHE...",
+      "recommendation": "SELECT o.id, o.customer_id, SUM(oi.quantity * oi.unit_price) AS total FROM dbo.orders o JOIN dbo.order_items oi ON oi.order_id = o.id WHERE o.created_at > DATEADD(day, -30, GETDATE()) GROUP BY o.id, o.customer_id",
+      "details": {
+        "query_hash": "0x3F9A8B1C2D4E5F60",
+        "execution_count": 18400,
+        "avg_worker_time_ms": 7200,
+        "total_worker_time_ms": 132480000,
+        "avg_logical_reads": 1240000,
+        "last_execution_time": "2026-04-17 08:12:33"
+      }
+    },
+    {
+      "id": "bot.block.104_227",
+      "category": "bottlenecks",
+      "severity": "warning",
+      "title": "Session 104 blocking 227 (12,800 ms)",
+      "description": "LCK_M_S. Blocker: etl_pipeline. Blocked: app_service.",
+      "recommendation": "",
+      "details": {
+        "resource": "objectlock OBJECT: 5:1093578934",
+        "blocker_query": "BEGIN TRAN; SELECT TOP (10000) * FROM dbo.events WITH (TABLOCKX); ...",
+        "blocked_query": "INSERT INTO dbo.events (user_id, type, created_at) VALUES (?, ?, ?)"
+      }
+    },
+    {
+      "id": "bot.block.87_192",
+      "category": "bottlenecks",
+      "severity": "warning",
+      "title": "Session 87 blocking 192 (45,300 ms)",
+      "description": "LCK_M_X. Blocker: app_service. Blocked: reporting_user.",
+      "recommendation": "",
+      "details": {
+        "resource": "keylock hobtid=72057594045923328",
+        "blocker_query": "UPDATE dbo.orders SET status = 'shipped' WHERE id = 1234567",
+        "blocked_query": "SELECT * FROM dbo.orders WHERE customer_id = 42100"
+      }
+    },
+    {
+      "id": "bot.tempdb",
+      "category": "bottlenecks",
+      "severity": "warning",
+      "title": "tempdb: 2 data file(s), recommended 8",
+      "description": "Imbalance 1,450 MB. PAGELATCH contention 820s on 2:1:3 (SGAM page).",
+      "recommendation": "ALTER DATABASE tempdb ADD FILE ... ; -- grow to 8 equal files",
+      "details": {
+        "file_count": 2,
+        "recommended_file_count": 8,
+        "imbalance_mb": 1450,
+        "top_contention_resource": "2:1:3 (SGAM page)"
+      }
+    },
+    {
+      "id": "bot.wait.pageiolatch_sh",
+      "category": "bottlenecks",
+      "severity": "warning",
+      "title": "PAGEIOLATCH_SH \u2014 32.1%",
+      "description": "Data page read from disk. IO pressure. Check storage latency and buffer pool.",
+      "recommendation": "",
+      "details": {
+        "rank": 1,
+        "pct_total_wait": 32.1,
+        "wait_time_s": 185400,
+        "signal_wait_time_s": 5200,
+        "waiting_tasks_count": 14800000
+      }
+    },
+    {
+      "id": "cap.mem.buffer_cache_hit_ratio",
+      "category": "capacity",
+      "severity": "warning",
+      "title": "Buffer cache hit ratio 93.8%",
+      "description": "Healthy OLTP sits at 95%+. Correlate with PLE and IO waits.",
+      "recommendation": "",
+      "details": {
+        "metric": "buffer_cache_hit_ratio",
+        "value": 93.8,
+        "unit": "percent"
+      }
+    },
+    {
+      "id": "perf.frag.IX_events_user_time",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Fragmented: IX_events_user_time (25%)",
+      "description": "24.6% on dbo.events (92,100 pages). Reorganize.",
+      "recommendation": "ALTER INDEX [IX_events_user_time] ON [dbo].[events] REORGANIZE;",
+      "details": {
+        "fragmentation_pct": 24.6,
+        "page_count": 92100
+      }
+    },
+    {
+      "id": "perf.frag.IX_order_items_product",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Fragmented: IX_order_items_product (22%)",
+      "description": "22.1% on dbo.order_items (64,500 pages). Reorganize.",
+      "recommendation": "ALTER INDEX [IX_order_items_product] ON [dbo].[order_items] REORGANIZE;",
+      "details": {
+        "fragmentation_pct": 22.1,
+        "page_count": 64500
+      }
+    },
+    {
+      "id": "perf.frag.PK_orders",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Fragmented: PK_orders (12%)",
+      "description": "12.4% on dbo.orders (128,400 pages). Reorganize.",
+      "recommendation": "ALTER INDEX [PK_orders] ON [dbo].[orders] REORGANIZE;",
+      "details": {
+        "fragmentation_pct": 12.4,
+        "page_count": 128400
+      }
+    },
+    {
+      "id": "perf.frag.PK_products",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Fragmented: PK_products (28%)",
+      "description": "28.4% on dbo.products (18,200 pages). Reorganize.",
+      "recommendation": "ALTER INDEX [PK_products] ON [dbo].[products] REORGANIZE;",
+      "details": {
+        "fragmentation_pct": 28.4,
+        "page_count": 18200
+      }
+    },
+    {
+      "id": "perf.frag.PK_sessions",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Fragmented: PK_sessions (19%)",
+      "description": "18.7% on dbo.sessions (24,800 pages). Reorganize.",
+      "recommendation": "ALTER INDEX [PK_sessions] ON [dbo].[sessions] REORGANIZE;",
+      "details": {
+        "fragmentation_pct": 18.7,
+        "page_count": 24800
+      }
+    },
+    {
+      "id": "perf.missing_idx.order_items.order_id",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Missing index on dbo.order_items (order_id)",
+      "description": "Improvement measure 215,000, avg impact 58%, 14,800 seeks.",
+      "recommendation": "CREATE NONCLUSTERED INDEX IX_order_items_order ON dbo.order_items (order_id) INCLUDE (product_id, quantity, unit_price);",
+      "details": {
+        "improvement_measure": 215000,
+        "avg_user_impact_pct": 58.3,
+        "user_seeks": 14800,
+        "user_scans": 0,
+        "equality_columns": "order_id",
+        "inequality_columns": "",
+        "included_columns": "product_id, quantity, unit_price"
+      }
+    },
+    {
+      "id": "perf.missing_idx.orders.customer_id",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Missing index on dbo.orders (customer_id)",
+      "description": "Improvement measure 480,000, avg impact 72%, 8,200 seeks.",
+      "recommendation": "CREATE NONCLUSTERED INDEX IX_orders_customer_created ON dbo.orders (customer_id, created_at) INCLUDE (status, total);",
+      "details": {
+        "improvement_measure": 480000,
+        "avg_user_impact_pct": 71.8,
+        "user_seeks": 8200,
+        "user_scans": 120,
+        "equality_columns": "customer_id",
+        "inequality_columns": "created_at",
+        "included_columns": "status, total"
+      }
+    },
+    {
+      "id": "perf.plan.implicitconversion.A1B2C3",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Plan: ImplicitConversion",
+      "description": "Converting varchar(255) to nvarchar(4000). Index IX_customers_email not used.",
+      "recommendation": "",
+      "details": {
+        "query_text": "SELECT * FROM dbo.customers WHERE email = @email",
+        "query_hash": "0xA1B2C3D4E5F60718",
+        "column_ref": "dbo.customers.email"
+      }
+    },
+    {
+      "id": "perf.plan.missingstatistics.B7C8D9",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Plan: MissingStatistics",
+      "description": "Statistics missing on (user_id, type). Cardinality estimate off by 40x.",
+      "recommendation": "",
+      "details": {
+        "query_text": "SELECT COUNT(*) FROM dbo.events WHERE user_id = ? AND type = ?",
+        "query_hash": "0xB7C8D9E0F1A20304",
+        "column_ref": "dbo.events.type"
+      }
+    },
+    {
+      "id": "perf.plan.spilltotempdb.3F9A8B",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Plan: SpillToTempDB",
+      "description": "Hash match spilled 450 MB to tempdb during aggregation.",
+      "recommendation": "",
+      "details": {
+        "query_text": "... GROUP BY o.id, o.customer_id",
+        "query_hash": "0x3F9A8B1C2D4E5F60",
+        "column_ref": null
+      }
+    },
+    {
+      "id": "perf.plan.tablescan.3F9A8B",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Plan: TableScan",
+      "description": "Full table scan over 42M rows. No useful index on actor_id.",
+      "recommendation": "",
+      "details": {
+        "query_text": "SELECT * FROM dbo.audit_log WHERE actor_id = ? ORDER BY created_at DESC",
+        "query_hash": "0x3F9A8B1C2D4E5F60",
+        "column_ref": "dbo.audit_log.actor_id"
+      }
+    },
+    {
+      "id": "perf.query.7B3C2A1E",
+      "category": "performance",
+      "severity": "warning",
+      "title": "1,500 ms avg \u00b7 8,900 runs",
+      "description": "SELECT c.id, c.email, COUNT(DISTINCT o.id) AS orders FROM dbo.customers c LEFT JOIN dbo.orders o ON o.customer_id = c.id GROUP BY c.id, c...",
+      "recommendation": "SELECT c.id, c.email, COUNT(DISTINCT o.id) AS orders FROM dbo.customers c LEFT JOIN dbo.orders o ON o.customer_id = c.id GROUP BY c.id, c.email HAVING COUNT(DISTINCT o.id) > 5",
+      "details": {
+        "query_hash": "0x7B3C2A1E4F5D6082",
+        "execution_count": 8900,
+        "avg_worker_time_ms": 1500,
+        "total_worker_time_ms": 13350000,
+        "avg_logical_reads": 84500,
+        "last_execution_time": "2026-04-17 08:10:41"
+      }
+    },
+    {
+      "id": "perf.query.A1B2C3D4",
+      "category": "performance",
+      "severity": "warning",
+      "title": "2,100 ms avg \u00b7 42,800 runs",
+      "description": "SELECT TOP 50 p.* FROM dbo.products p WHERE p.name LIKE @search OR p.description LIKE @search ORDER BY p.updated_at DESC",
+      "recommendation": "SELECT TOP 50 p.* FROM dbo.products p WHERE p.name LIKE @search OR p.description LIKE @search ORDER BY p.updated_at DESC",
+      "details": {
+        "query_hash": "0xA1B2C3D4E5F60718",
+        "execution_count": 42800,
+        "avg_worker_time_ms": 2100,
+        "total_worker_time_ms": 89880000,
+        "avg_logical_reads": 312000,
+        "last_execution_time": "2026-04-17 08:14:02"
+      }
+    },
+    {
+      "id": "perf.unused_idx.IX_audit_log_source",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Unused index: IX_audit_log_source",
+      "description": "dbo.audit_log: 0 reads, 8,400,200 writes, 312 MB.",
+      "recommendation": "DROP INDEX IX_audit_log_source ON dbo.audit_log;",
+      "details": {
+        "table": "dbo.audit_log",
+        "size_mb": 312,
+        "user_updates": 8400200,
+        "user_seeks": 0,
+        "user_scans": 2,
+        "user_lookups": 0
+      }
+    },
+    {
+      "id": "perf.unused_idx.IX_customers_phone_alt",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Unused index: IX_customers_phone_alt",
+      "description": "dbo.customers: 0 reads, 1,820,500 writes, 94 MB.",
+      "recommendation": "DROP INDEX IX_customers_phone_alt ON dbo.customers;",
+      "details": {
+        "table": "dbo.customers",
+        "size_mb": 94,
+        "user_updates": 1820500,
+        "user_seeks": 0,
+        "user_scans": 0,
+        "user_lookups": 0
+      }
+    },
+    {
+      "id": "perf.unused_idx.IX_orders_referral_code",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Unused index: IX_orders_referral_code",
+      "description": "dbo.orders: 0 reads, 4,218,400 writes, 182 MB.",
+      "recommendation": "DROP INDEX IX_orders_referral_code ON dbo.orders;",
+      "details": {
+        "table": "dbo.orders",
+        "size_mb": 182,
+        "user_updates": 4218400,
+        "user_seeks": 0,
+        "user_scans": 0,
+        "user_lookups": 0
+      }
+    },
+    {
+      "id": "perf.unused_idx.IX_products_sku_legacy",
+      "category": "performance",
+      "severity": "warning",
+      "title": "Unused index: IX_products_sku_legacy",
+      "description": "dbo.products: 0 reads, 215,400 writes, 28 MB.",
+      "recommendation": "DROP INDEX IX_products_sku_legacy ON dbo.products;",
+      "details": {
+        "table": "dbo.products",
+        "size_mb": 28,
+        "user_updates": 215400,
+        "user_seeks": 0,
+        "user_scans": 0,
+        "user_lookups": 0
+      }
+    },
+    {
+      "id": "bot.wait.async_network_io",
+      "category": "bottlenecks",
+      "severity": "info",
+      "title": "ASYNC_NETWORK_IO \u2014 7.2%",
+      "description": "Client slow to consume results. Almost always client-side.",
+      "recommendation": "",
+      "details": {
+        "rank": 5,
+        "pct_total_wait": 7.2,
+        "wait_time_s": 41600,
+        "signal_wait_time_s": 480,
+        "waiting_tasks_count": 6100000
+      }
+    },
+    {
+      "id": "bot.wait.cxconsumer",
+      "category": "bottlenecks",
+      "severity": "info",
+      "title": "CXCONSUMER \u2014 2.1%",
+      "description": "Parallelism consumer wait. Not actionable on its own.",
+      "recommendation": "",
+      "details": {
+        "rank": 9,
+        "pct_total_wait": 2.1,
+        "wait_time_s": 12100,
+        "signal_wait_time_s": 140,
+        "waiting_tasks_count": 1800000
+      }
+    },
+    {
+      "id": "bot.wait.cxpacket",
+      "category": "bottlenecks",
+      "severity": "info",
+      "title": "CXPACKET \u2014 22.5%",
+      "description": "Parallelism coordination. Usually benign. Check MAXDOP only if dominant.",
+      "recommendation": "",
+      "details": {
+        "rank": 2,
+        "pct_total_wait": 22.5,
+        "wait_time_s": 129800,
+        "signal_wait_time_s": 3800,
+        "waiting_tasks_count": 8200000
+      }
+    },
+    {
+      "id": "bot.wait.lck_m_s",
+      "category": "bottlenecks",
+      "severity": "info",
+      "title": "LCK_M_S \u2014 3.2%",
+      "description": "Shared lock wait. Readers blocked by writers. Consider RCSI.",
+      "recommendation": "",
+      "details": {
+        "rank": 8,
+        "pct_total_wait": 3.2,
+        "wait_time_s": 18500,
+        "signal_wait_time_s": 210,
+        "waiting_tasks_count": 84100
+      }
+    },
+    {
+      "id": "bot.wait.lck_m_x",
+      "category": "bottlenecks",
+      "severity": "info",
+      "title": "LCK_M_X \u2014 8.5%",
+      "description": "Exclusive lock wait. Look at current blocking and long transactions.",
+      "recommendation": "",
+      "details": {
+        "rank": 4,
+        "pct_total_wait": 8.5,
+        "wait_time_s": 49100,
+        "signal_wait_time_s": 820,
+        "waiting_tasks_count": 182400
+      }
+    },
+    {
+      "id": "bot.wait.pagelatch_ex",
+      "category": "bottlenecks",
+      "severity": "info",
+      "title": "PAGELATCH_EX \u2014 4.8%",
+      "description": "In-memory page contention, typically tempdb allocation. Bump tempdb file count.",
+      "recommendation": "",
+      "details": {
+        "rank": 7,
+        "pct_total_wait": 4.8,
+        "wait_time_s": 27700,
+        "signal_wait_time_s": 340,
+        "waiting_tasks_count": 3200000
+      }
+    },
+    {
+      "id": "bot.wait.resource_semaphore",
+      "category": "bottlenecks",
+      "severity": "info",
+      "title": "RESOURCE_SEMAPHORE \u2014 1.2%",
+      "description": "Memory grant queue. Critical when sustained.",
+      "recommendation": "",
+      "details": {
+        "rank": 10,
+        "pct_total_wait": 1.2,
+        "wait_time_s": 6900,
+        "signal_wait_time_s": 85,
+        "waiting_tasks_count": 4200
+      }
+    },
+    {
+      "id": "bot.wait.sos_scheduler_yield",
+      "category": "bottlenecks",
+      "severity": "info",
+      "title": "SOS_SCHEDULER_YIELD \u2014 6.1%",
+      "description": "CPU pressure. Top CPU consumers; parallelism.",
+      "recommendation": "",
+      "details": {
+        "rank": 6,
+        "pct_total_wait": 6.1,
+        "wait_time_s": 35200,
+        "signal_wait_time_s": 420,
+        "waiting_tasks_count": 28400000
+      }
+    },
+    {
+      "id": "bot.wait.writelog",
+      "category": "bottlenecks",
+      "severity": "info",
+      "title": "WRITELOG \u2014 12.3%",
+      "description": "Log writer flush wait. Log IO latency. Faster log storage or smaller txns.",
+      "recommendation": "",
+      "details": {
+        "rank": 3,
+        "pct_total_wait": 12.3,
+        "wait_time_s": 71000,
+        "signal_wait_time_s": 2100,
+        "waiting_tasks_count": 22400000
+      }
+    },
+    {
+      "id": "cap.sess.app_service.web-prod-02",
+      "category": "capacity",
+      "severity": "info",
+      "title": "184 \u00d7 app_service from web-prod-02",
+      "description": "Node.js Driver \u00b7 status running.",
+      "recommendation": "",
+      "details": {
+        "login_name": "app_service",
+        "database_name": "shopdb",
+        "host_name": "web-prod-02",
+        "program_name": "Node.js Driver",
+        "status": "running",
+        "session_count": 184
+      }
+    },
+    {
+      "id": "cap.sess.app_service.web-prod-03",
+      "category": "capacity",
+      "severity": "info",
+      "title": "42 \u00d7 app_service from web-prod-03",
+      "description": "Node.js Driver \u00b7 status sleeping.",
+      "recommendation": "",
+      "details": {
+        "login_name": "app_service",
+        "database_name": "shopdb",
+        "host_name": "web-prod-03",
+        "program_name": "Node.js Driver",
+        "status": "sleeping",
+        "session_count": 42
+      }
+    },
+    {
+      "id": "cap.sess.dba_readonly.ops-laptop",
+      "category": "capacity",
+      "severity": "info",
+      "title": "3 \u00d7 dba_readonly from ops-laptop",
+      "description": "SSMS \u00b7 status sleeping.",
+      "recommendation": "",
+      "details": {
+        "login_name": "dba_readonly",
+        "database_name": "shopdb",
+        "host_name": "ops-laptop",
+        "program_name": "SSMS",
+        "status": "sleeping",
+        "session_count": 3
+      }
+    },
+    {
+      "id": "cap.sess.etl_pipeline.etl-01",
+      "category": "capacity",
+      "severity": "info",
+      "title": "8 \u00d7 etl_pipeline from etl-01",
+      "description": ".Net SqlClient Data Provider \u00b7 status running.",
+      "recommendation": "",
+      "details": {
+        "login_name": "etl_pipeline",
+        "database_name": "shopdb",
+        "host_name": "etl-01",
+        "program_name": ".Net SqlClient Data Provider",
+        "status": "running",
+        "session_count": 8
+      }
+    },
+    {
+      "id": "cap.sess.reporting_user.bi-01",
+      "category": "capacity",
+      "severity": "info",
+      "title": "12 \u00d7 reporting_user from bi-01",
+      "description": "Power BI \u00b7 status running.",
+      "recommendation": "",
+      "details": {
+        "login_name": "reporting_user",
+        "database_name": "shopdb",
+        "host_name": "bi-01",
+        "program_name": "Power BI",
+        "status": "running",
+        "session_count": 12
+      }
+    },
+    {
+      "id": "hlt.size.shopdb",
+      "category": "health",
+      "severity": "info",
+      "title": "shopdb: 102,400 MB data, 12,100 MB log",
+      "description": "Largest table: dbo.audit_log (42,100 MB).",
+      "recommendation": "",
+      "details": {
+        "data_size_mb": 145000,
+        "data_used_mb": 102400,
+        "log_size_mb": 28000,
+        "log_used_mb": 12100,
+        "largest_table": "dbo.audit_log",
+        "largest_table_mb": 42100
+      }
+    },
+    {
+      "id": "perf.frag.summary",
+      "category": "performance",
+      "severity": "info",
+      "title": "9 indexes below 10% fragmentation",
+      "description": "No maintenance needed. Sampled in SAMPLED mode.",
+      "recommendation": "",
+      "details": {
+        "indexes": "PK_customers, IX_customers_email, PK_payments, PK_reviews, PK_carts, PK_cart_items, PK_shipments, PK_addresses, PK_notifications"
+      }
+    },
+    {
+      "id": "perf.missing_idx.audit_log.created_at",
+      "category": "performance",
+      "severity": "info",
+      "title": "Missing index on dbo.audit_log (created_at)",
+      "description": "Improvement measure 38,000, avg impact 28%, 180 seeks.",
+      "recommendation": "CREATE NONCLUSTERED INDEX IX_audit_log_created ON dbo.audit_log (created_at) INCLUDE (actor_id, action, target_type);",
+      "details": {
+        "improvement_measure": 38000,
+        "avg_user_impact_pct": 28.5,
+        "user_seeks": 180,
+        "user_scans": 640,
+        "equality_columns": "",
+        "inequality_columns": "created_at",
+        "included_columns": "actor_id, action, target_type"
+      }
+    },
+    {
+      "id": "perf.missing_idx.events.user_id",
+      "category": "performance",
+      "severity": "info",
+      "title": "Missing index on dbo.events (user_id)",
+      "description": "Improvement measure 42,000, avg impact 64%, 4,200 seeks.",
+      "recommendation": "CREATE NONCLUSTERED INDEX IX_events_user_created ON dbo.events (user_id, created_at) INCLUDE (type);",
+      "details": {
+        "improvement_measure": 42000,
+        "avg_user_impact_pct": 64.1,
+        "user_seeks": 4200,
+        "user_scans": 42,
+        "equality_columns": "user_id",
+        "inequality_columns": "created_at",
+        "included_columns": "type"
+      }
+    },
+    {
+      "id": "perf.missing_idx.products.category_id",
+      "category": "performance",
+      "severity": "info",
+      "title": "Missing index on dbo.products (category_id)",
+      "description": "Improvement measure 7,800, avg impact 18%, 1,200 seeks.",
+      "recommendation": "CREATE NONCLUSTERED INDEX IX_products_category ON dbo.products (category_id) INCLUDE (name, price);",
+      "details": {
+        "improvement_measure": 7800,
+        "avg_user_impact_pct": 18.2,
+        "user_seeks": 1200,
+        "user_scans": 0,
+        "equality_columns": "category_id",
+        "inequality_columns": "",
+        "included_columns": "name, price"
+      }
+    },
+    {
+      "id": "perf.plan.columnswithnostatistics.55AA66",
+      "category": "performance",
+      "severity": "info",
+      "title": "Plan: ColumnsWithNoStatistics",
+      "description": "Column dbo.reviews.is_moderated has no statistics.",
+      "recommendation": "",
+      "details": {
+        "query_text": "SELECT * FROM dbo.reviews WHERE is_moderated = 0",
+        "query_hash": "0x55AA66BB77CC88DD",
+        "column_ref": "dbo.reviews.is_moderated"
+      }
+    },
+    {
+      "id": "perf.plan.columnswithnostatistics.66AA77",
+      "category": "performance",
+      "severity": "info",
+      "title": "Plan: ColumnsWithNoStatistics",
+      "description": "Column dbo.shipments.carrier has no statistics.",
+      "recommendation": "",
+      "details": {
+        "query_text": "SELECT * FROM dbo.shipments WHERE carrier = ?",
+        "query_hash": "0x66AA77BB88CC99EE",
+        "column_ref": "dbo.shipments.carrier"
+      }
+    },
+    {
+      "id": "perf.plan.columnswithnostatistics.77AA88",
+      "category": "performance",
+      "severity": "info",
+      "title": "Plan: ColumnsWithNoStatistics",
+      "description": "Column dbo.notifications.channel has no statistics.",
+      "recommendation": "",
+      "details": {
+        "query_text": "SELECT * FROM dbo.notifications WHERE channel = ?",
+        "query_hash": "0x77AA88BB99CCAAFF",
+        "column_ref": "dbo.notifications.channel"
+      }
+    },
+    {
+      "id": "perf.query.11223344",
+      "category": "performance",
+      "severity": "info",
+      "title": "10 ms avg \u00b7 12,400 runs",
+      "description": "SELECT id, name, price FROM dbo.products WHERE id IN (?, ?, ?, ?, ?)",
+      "recommendation": "",
+      "details": {
+        "query_hash": "0x1122334455667788",
+        "execution_count": 12400,
+        "avg_worker_time_ms": 10,
+        "total_worker_time_ms": 124000,
+        "avg_logical_reads": 18,
+        "last_execution_time": "2026-04-17 08:14:30"
+      }
+    },
+    {
+      "id": "perf.query.9988AABB",
+      "category": "performance",
+      "severity": "info",
+      "title": "15 ms avg \u00b7 38,900 runs",
+      "description": "SELECT token, user_id FROM dbo.sessions WHERE token = @t AND expires_at > SYSUTCDATETIME()",
+      "recommendation": "",
+      "details": {
+        "query_hash": "0x9988AABB77665544",
+        "execution_count": 38900,
+        "avg_worker_time_ms": 15,
+        "total_worker_time_ms": 583500,
+        "avg_logical_reads": 29,
+        "last_execution_time": "2026-04-17 08:14:55"
+      }
+    },
+    {
+      "id": "perf.query.AA55BB66",
+      "category": "performance",
+      "severity": "info",
+      "title": "20 ms avg \u00b7 54,200 runs",
+      "description": "INSERT INTO dbo.events (user_id, type, created_at) VALUES (?, ?, ?)",
+      "recommendation": "",
+      "details": {
+        "query_hash": "0xAA55BB66CC77DD80",
+        "execution_count": 54200,
+        "avg_worker_time_ms": 20,
+        "total_worker_time_ms": 1084000,
+        "avg_logical_reads": 42,
+        "last_execution_time": "2026-04-17 08:14:57"
+      }
+    },
+    {
+      "id": "perf.query.ABCDEF01",
+      "category": "performance",
+      "severity": "info",
+      "title": "8 ms avg \u00b7 6,200 runs",
+      "description": "SELECT * FROM dbo.carts WHERE customer_id = @cid AND status = 'open'",
+      "recommendation": "",
+      "details": {
+        "query_hash": "0xABCDEF0102030405",
+        "execution_count": 6200,
+        "avg_worker_time_ms": 8,
+        "total_worker_time_ms": 49600,
+        "avg_logical_reads": 12,
+        "last_execution_time": "2026-04-17 08:13:22"
+      }
+    },
+    {
+      "id": "perf.query.CC11AA22",
+      "category": "performance",
+      "severity": "info",
+      "title": "90 ms avg \u00b7 215,000 runs",
+      "description": "SELECT * FROM dbo.customers WHERE id = @id",
+      "recommendation": "",
+      "details": {
+        "query_hash": "0xCC11AA22BB3344F0",
+        "execution_count": 215000,
+        "avg_worker_time_ms": 90,
+        "total_worker_time_ms": 19350000,
+        "avg_logical_reads": 340,
+        "last_execution_time": "2026-04-17 08:14:59"
+      }
+    },
+    {
+      "id": "perf.query.DEAD0001",
+      "category": "performance",
+      "severity": "info",
+      "title": "40 ms avg \u00b7 184,000 runs",
+      "description": "SELECT id, total, status FROM dbo.orders WHERE customer_id = @cid",
+      "recommendation": "",
+      "details": {
+        "query_hash": "0xDEAD0001BEEF0002",
+        "execution_count": 184000,
+        "avg_worker_time_ms": 40,
+        "total_worker_time_ms": 7360000,
+        "avg_logical_reads": 120,
+        "last_execution_time": "2026-04-17 08:14:58"
+      }
+    },
+    {
+      "id": "perf.query.FEED0003",
+      "category": "performance",
+      "severity": "info",
+      "title": "35 ms avg \u00b7 97,500 runs",
+      "description": "UPDATE dbo.sessions SET last_seen = SYSUTCDATETIME() WHERE token = @t",
+      "recommendation": "",
+      "details": {
+        "query_hash": "0xFEED0003CAFE0004",
+        "execution_count": 97500,
+        "avg_worker_time_ms": 35,
+        "total_worker_time_ms": 3412500,
+        "avg_logical_reads": 88,
+        "last_execution_time": "2026-04-17 08:14:59"
+      }
+    }
+  ],
+  "errors": [
+    {
+      "probe": "query_store_top_queries",
+      "error": "Query Store is not enabled on this database (falling back to sys.dm_exec_query_stats)"
+    }
+  ]
+}
